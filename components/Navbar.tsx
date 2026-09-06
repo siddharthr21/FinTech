@@ -5,10 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import {
   ShieldCheck,
   LogOut,
-  User,
+  LogIn,
   ChevronDown,
   Lock,
-  Sparkles,
+  UserCheck,
   CheckCircle,
 } from "lucide-react";
 
@@ -17,7 +17,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <header className="border-b border-slate-800 bg-[#0f172a]/90 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center space-x-3">
@@ -50,13 +50,15 @@ export default function Navbar() {
           </span>
         </div>
 
-        {/* Analyst Session Bar */}
-        <div className="relative">
+        {/* Analyst Session Controls */}
+        <div className="flex items-center gap-3">
           {analyst ? (
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 relative">
+              {/* Analyst Profile Pill / Switcher */}
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2.5 p-1.5 pr-3 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-left transition"
+                className="flex items-center gap-2 p-1.5 pr-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-left transition shadow-sm"
+                title="Click to switch analyst"
               >
                 <div
                   className={`h-7 w-7 rounded-full bg-gradient-to-br ${analyst.badgeColor || "from-indigo-600 to-indigo-800"} flex items-center justify-center text-xs font-bold text-white shadow`}
@@ -65,7 +67,7 @@ export default function Navbar() {
                 </div>
                 <div className="hidden sm:block">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-slate-200">{analyst.name}</span>
+                    <span className="text-xs font-bold text-white">{analyst.name}</span>
                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
                       {analyst.id}
                     </span>
@@ -75,7 +77,17 @@ export default function Navbar() {
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
               </button>
 
-              {/* Analyst Menu Dropdown */}
+              {/* Direct, Unmistakable Sign Out Button */}
+              <button
+                onClick={() => logout()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800/80 text-xs font-medium transition"
+                title="Sign out of current analyst session"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+
+              {/* Switch Analyst Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 top-12 w-64 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-3.5 py-2 border-b border-slate-800">
@@ -87,7 +99,6 @@ export default function Navbar() {
                     <div className="text-slate-400 text-[11px] mt-0.5">{analyst.tier}</div>
                   </div>
 
-                  {/* Switch Analyst options */}
                   <div className="px-3.5 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                     Switch Active Analyst
                   </div>
@@ -99,7 +110,7 @@ export default function Navbar() {
                         setDropdownOpen(false);
                       }}
                       className={`w-full px-3.5 py-2 text-left flex items-center justify-between hover:bg-slate-800/80 transition ${
-                        a.id === analyst.id ? "bg-indigo-950/40 text-indigo-200" : "text-slate-300"
+                        a.id === analyst.id ? "bg-indigo-950/40 text-indigo-200 font-semibold" : "text-slate-300"
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -107,34 +118,21 @@ export default function Navbar() {
                           {a.initials}
                         </div>
                         <div>
-                          <div className="font-medium text-xs">{a.name}</div>
+                          <div className="text-xs">{a.name}</div>
                           <div className="text-[10px] text-slate-400">{a.role}</div>
                         </div>
                       </div>
                       {a.id === analyst.id && <CheckCircle className="w-3.5 h-3.5 text-indigo-400" />}
                     </button>
                   ))}
-
-                  <div className="border-t border-slate-800 mt-1 pt-1">
-                    <button
-                      onClick={async () => {
-                        await logout();
-                        setDropdownOpen(false);
-                      }}
-                      className="w-full px-3.5 py-2 text-left text-rose-400 hover:bg-rose-950/40 flex items-center gap-2 transition"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Sign Out
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/50 border border-amber-800/60 px-2.5 py-1 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/50 border border-amber-800/60 px-2.5 py-1.5 rounded-lg font-medium">
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
-                No Analyst Session
+                <span>Not Signed In</span>
               </span>
             </div>
           )}

@@ -20,10 +20,12 @@ import {
   Database,
   UserCheck,
   Calendar,
+  ArrowRight,
 } from "lucide-react";
 
 export default function Dashboard() {
   const { analyst, loading: authLoading } = useAuth();
+  const [browseGuest, setBrowseGuest] = useState<boolean>(false);
   const [reports, setReports] = useState<InvestigationReport[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -114,10 +116,31 @@ export default function Dashboard() {
   const pendingCount = reports.filter((r) => r.pipeline_status === "Pending Analyst Review").length;
   const errorCount = reports.filter((r) => r.pipeline_status === "Agent Error - Manual Review Required").length;
 
+  // If not authenticated and not in guest preview mode, show the dedicated Sign-In Screen
+  if (!analyst && !authLoading && !browseGuest) {
+    return <AnalystSignIn onBrowseGuest={() => setBrowseGuest(true)} />;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Analyst Sign-In Gateway (Handbook Layer 1 & 3) */}
-      {!analyst && !authLoading && <AnalystSignIn />}
+      {/* Guest Preview Mode Notice */}
+      {!analyst && browseGuest && (
+        <div className="p-3.5 rounded-xl bg-amber-950/70 border border-amber-800/80 text-xs text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span>
+              <strong>Guest Preview Mode (Read-Only):</strong> You are exploring the queue without an analyst session. Case dispositions (Approve, False Positive, Escalate) require certified sign-in.
+            </span>
+          </div>
+          <button
+            onClick={() => setBrowseGuest(false)}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5 shadow text-xs flex-shrink-0"
+          >
+            <span>Sign In to Analyst Portal</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {loadError && (
         <div className="p-3.5 rounded-lg bg-rose-950/70 border border-rose-800 text-xs text-rose-200 flex items-start gap-3">
@@ -629,11 +652,20 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-amber-950/60 border border-amber-800/70 text-xs text-amber-200">
-                    <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                    <span>
-                      <strong>Analyst Sign-In Required:</strong> Under Handbook Chapter 9.1 &amp; 9.3, case dispositions cannot be executed without authenticated analyst sign-off.
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-amber-950/60 border border-amber-800/70 text-xs text-amber-200">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                      <span>
+                        <strong>Analyst Sign-In Required:</strong> Human checkpoint decisions (Approve, False Positive, Escalate) require certified sign-off.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setBrowseGuest(false)}
+                      className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5 shadow"
+                    >
+                      <span>Sign In as Analyst</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
 
