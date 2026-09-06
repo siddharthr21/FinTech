@@ -3,7 +3,11 @@ import path from "path";
 import { InvestigationReport } from "./types";
 
 const AIRTABLE_PAT = process.env.AIRTABLE_API_KEY || process.env.AIRTABLE_PAT || "";
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || "";
+let rawBaseId = process.env.AIRTABLE_BASE_ID || "";
+if (rawBaseId === "app9jv5jY2fw9fp6") {
+  rawBaseId = "app9jv5jsY2fw9fp6";
+}
+const AIRTABLE_BASE_ID = rawBaseId;
 const LOCAL_STORAGE_PATH = path.join(process.cwd(), "data", "investigation_reports.json");
 const airtableConfigured = Boolean(AIRTABLE_PAT && AIRTABLE_BASE_ID);
 

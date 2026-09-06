@@ -13,8 +13,28 @@ import urllib.request
 import urllib.error
 from typing import Dict, Any, List
 
+def load_dotenv(path: str = ".env") -> None:
+    if not os.path.exists(path):
+        parent_env = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+        if os.path.exists(parent_env):
+            path = parent_env
+        else:
+            return
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+load_dotenv()
+
 AIRTABLE_PAT = os.environ.get("AIRTABLE_API_KEY") or os.environ.get("AIRTABLE_PAT", "")
-AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "")
+raw_base_id = os.environ.get("AIRTABLE_BASE_ID", "")
+if raw_base_id == "app9jv5jY2fw9fp6":
+    raw_base_id = "app9jv5jsY2fw9fp6"
+AIRTABLE_BASE_ID = raw_base_id
 
 TABLE_DEFINITIONS = [
     {
@@ -98,7 +118,8 @@ TABLE_DEFINITIONS = [
                 "type": "singleSelect",
                 "options": {"choices": [{"name": "Negative"}, {"name": "Neutral"}, {"name": "Positive"}]}
             },
-            {"name": "resolution_time_hrs", "type": "number", "options": {"precision": 1}}
+            {"name": "resolution_time_hrs", "type": "number", "options": {"precision": 1}},
+            {"name": "notes", "type": "multilineText"}
         ]
     },
     {
@@ -107,6 +128,7 @@ TABLE_DEFINITIONS = [
         "fields": [
             {"name": "report_id", "type": "singleLineText"},
             {"name": "transaction_id", "type": "singleLineText"},
+            {"name": "summary", "type": "multilineText"},
             {"name": "confidence_score", "type": "number", "options": {"precision": 0}},
             {
                 "name": "verdict",
@@ -119,7 +141,9 @@ TABLE_DEFINITIONS = [
                     ]
                 }
             },
+            {"name": "fused_reasoning", "type": "multilineText"},
             {"name": "evidence_trail", "type": "multilineText"},
+            {"name": "recommended_action", "type": "singleLineText"},
             {"name": "agent1_output_json", "type": "multilineText"},
             {"name": "agent2_output_json", "type": "multilineText"},
             {"name": "agent3_output_json", "type": "multilineText"},
@@ -177,33 +201,86 @@ def create_table(base_id: str, table_def: Dict[str, Any]):
     make_airtable_request(url, method="POST", payload=table_def)
     print(f"[OK] Table '{table_def['name']}' created.")
 
+def get_record_count(base_id: str, table_name: str) -> int:
+    try:
+        url = f"https://api.airtable.com/v0/{base_id}/{table_name}?maxRecords=1"
+        resp = make_airtable_request(url)
+        return len(resp.get("records", []))
+    except Exception:
+        return 0
+
 def populate_seed_data(base_id: str, seed_data_path: str = "data/seed_data.json"):
     with open(seed_data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     # 1. Customers
-    url = f"https://api.airtable.com/v0/{base_id}/Customers"
-    records = [{"fields": c} for c in data.get("customers", [])]
-    make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
-    print(f"[OK] Seeded {len(records)} Customers.")
+    if get_record_count(base_id, "Customers") == 0:
+        url = f"https://api.airtable.com/v0/{base_id}/Customers"
+        records = [{"fields": c} for c in data.get("customers", [])]
+        make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
+        print(f"[OK] Seeded {len(records)} Customers.")
+    else:
+        print("[SKIP] Customers table already contains records.")
 
     # 2. Transactions
-    url = f"https://api.airtable.com/v0/{base_id}/Transactions"
-    records = [{"fields": t} for t in data.get("transactions", [])]
-    make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
-    print(f"[OK] Seeded {len(records)} Transactions.")
+    if get_record_count(base_id, "Transactions") == 0:
+        url = f"https://api.airtable.com/v0/{base_id}/Transactions"
+        records = [{"fields": t} for t in data.get("transactions", [])]
+        make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
+        print(f"[OK] Seeded {len(records)} Transactions.")
+    else:
+        print("[SKIP] Transactions table already contains records.")
 
     # 3. Customer History
-    url = f"https://api.airtable.com/v0/{base_id}/Customer_History"
-    records = [{"fields": h} for h in data.get("customer_history", [])]
-    make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
-    print(f"[OK] Seeded {len(records)} Customer History events.")
+    if get_record_count(base_id, "Customer_History") == 0:
+        url = f"https://api.airtable.com/v0/{base_id}/Customer_History"
+        records = [{"fields": h} for h in data.get("customer_history", [])]
+        make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
+        print(f"[OK] Seeded {len(records)} Customer History events.")
+    else:
+        print("[SKIP] Customer_History table already contains records.")
 
     # 4. Support Tickets
-    url = f"https://api.airtable.com/v0/{base_id}/Support_Tickets"
-    records = [{"fields": s} for s in data.get("support_tickets", [])]
-    make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
-    print(f"[OK] Seeded {len(records)} Support Tickets.")
+    if get_record_count(base_id, "Support_Tickets") == 0:
+        url = f"https://api.airtable.com/v0/{base_id}/Support_Tickets"
+        records = [{"fields": s} for s in data.get("support_tickets", [])]
+        make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
+        print(f"[OK] Seeded {len(records)} Support Tickets.")
+    else:
+        print("[SKIP] Support_Tickets table already contains records.")
+
+    # 5. Investigation Reports
+    reports_path = os.path.join(os.path.dirname(seed_data_path), "investigation_reports.json")
+    if os.path.exists(reports_path) and get_record_count(base_id, "Investigation_Reports") == 0:
+        with open(reports_path, "r", encoding="utf-8") as rf:
+            reports_data = json.load(rf)
+        records = []
+        for r in reports_data:
+            fields = {
+                "report_id": r.get("report_id"),
+                "transaction_id": r.get("transaction_id"),
+                "summary": r.get("summary"),
+                "confidence_score": r.get("confidence_score"),
+                "verdict": r.get("verdict"),
+                "fused_reasoning": r.get("fused_reasoning"),
+                "evidence_trail": json.dumps(r.get("evidence_trail", [])),
+                "recommended_action": r.get("recommended_action"),
+                "pipeline_status": r.get("pipeline_status"),
+                "agent1_output_json": r.get("agent1_output_json", "{}"),
+                "agent2_output_json": r.get("agent2_output_json", "{}"),
+                "agent3_output_json": r.get("agent3_output_json", "{}"),
+                "created_at": r.get("created_at")
+            }
+            if r.get("analyst_decision"):
+                fields["analyst_decision"] = r.get("analyst_decision")
+            if r.get("analyst_notes"):
+                fields["analyst_notes"] = r.get("analyst_notes")
+            records.append({"fields": fields})
+        url = f"https://api.airtable.com/v0/{base_id}/Investigation_Reports"
+        make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})
+        print(f"[OK] Seeded {len(records)} Investigation Reports.")
+    else:
+        print("[SKIP] Investigation_Reports table already contains records (or seed file not found).")
 
 def main():
     if not AIRTABLE_PAT or not AIRTABLE_BASE_ID:
