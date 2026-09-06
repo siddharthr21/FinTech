@@ -2,14 +2,20 @@ import fs from "fs";
 import path from "path";
 import { InvestigationReport } from "./types";
 
-const AIRTABLE_PAT = process.env.AIRTABLE_API_KEY || process.env.AIRTABLE_PAT || "";
-let rawBaseId = process.env.AIRTABLE_BASE_ID || "";
-if (rawBaseId === "app9jv5jY2fw9fp6") {
-  rawBaseId = "app9jv5jsY2fw9fp6";
-}
-const AIRTABLE_BASE_ID = rawBaseId;
 const LOCAL_STORAGE_PATH = path.join(process.cwd(), "data", "investigation_reports.json");
-const airtableConfigured = Boolean(AIRTABLE_PAT && AIRTABLE_BASE_ID);
+
+export function getAirtableConfig() {
+  const pat = process.env.AIRTABLE_API_KEY || process.env.AIRTABLE_PAT || "";
+  let baseId = process.env.AIRTABLE_BASE_ID || "";
+  if (baseId === "app9jv5jY2fw9fp6") {
+    baseId = "app9jv5jsY2fw9fp6";
+  }
+  return {
+    pat,
+    baseId,
+    isConfigured: Boolean(pat && baseId),
+  };
+}
 
 /** Escape a value for interpolation into an Airtable filterByFormula string literal. */
 function escapeFormulaValue(value: string): string {
@@ -22,11 +28,12 @@ function escapeFormulaValue(value: string): string {
  * empty queue rather than silently serving the local seed file as if it were live data.
  */
 export async function getInvestigationReports(): Promise<InvestigationReport[]> {
-  if (airtableConfigured) {
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Investigation_Reports?sort%5B0%5D%5Bfield%5D=confidence_score&sort%5B0%5D%5Bdirection%5D=desc`;
+  const config = getAirtableConfig();
+  if (config.isConfigured) {
+    const url = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports?sort%5B0%5D%5Bfield%5D=confidence_score&sort%5B0%5D%5Bdirection%5D=desc`;
     const res = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${AIRTABLE_PAT}`,
+        Authorization: `Bearer ${config.pat}`,
         "Content-Type": "application/json",
       },
       cache: "no-store",
@@ -105,11 +112,12 @@ export async function updateAnalystDecision(
   decision: "Approved-Fraud" | "False-Positive" | "Escalated",
   notes: string = ""
 ): Promise<boolean> {
-  if (airtableConfigured) {
+  const config = getAirtableConfig();
+  if (config.isConfigured) {
     const formula = `{report_id}='${escapeFormulaValue(reportId)}'`;
-    const searchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Investigation_Reports?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
+    const searchUrl = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
     const searchRes = await fetch(searchUrl, {
-      headers: { Authorization: `Bearer ${AIRTABLE_PAT}` },
+      headers: { Authorization: `Bearer ${config.pat}` },
       cache: "no-store",
     });
 
@@ -123,11 +131,11 @@ export async function updateAnalystDecision(
       return false; // No such report -> route answers 404.
     }
 
-    const patchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Investigation_Reports/${recordId}`;
+    const patchUrl = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports/${recordId}`;
     const patchRes = await fetch(patchUrl, {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${AIRTABLE_PAT}`,
+        Authorization: `Bearer ${config.pat}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -145,6 +153,14 @@ export async function updateAnalystDecision(
     }
 
     return true;
+  }
+
+  // Serverless / Vercel detection: fail fast with actionable guidance instead of EROFS
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    throw new Error(
+      "Read-only serverless deployment detected without Airtable configuration. " +
+      "Please set AIRTABLE_API_KEY and AIRTABLE_BASE_ID in your Vercel Project Settings (Settings -> Environment Variables) so decisions persist to Airtable."
+    );
   }
 
   // Local demo storage. Serverless filesystems are read-only, so a failed write
