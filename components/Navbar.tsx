@@ -18,20 +18,20 @@ export default function Navbar() {
 
   return (
     <header className="border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
         {/* Brand */}
-        <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 flex-shrink-0 text-xs sm:text-sm">
             FC
           </div>
-          <div>
-            <h1 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              FraudCopilot
-              <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700 font-medium">
-                Multi-Agent Orchestrator
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-1.5 sm:gap-2 truncate">
+              <span>FraudCopilot</span>
+              <span className="hidden md:inline-block text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700 font-medium">
+                Multi-Agent
               </span>
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="hidden lg:block text-xs text-slate-400 truncate">
               Grounded in The Agentic AI Handbook (ERA Foundation / Comed Kares, 2026)
             </p>
           </div>
@@ -80,7 +80,7 @@ export default function Navbar() {
               {/* Direct, Unmistakable Sign Out Button */}
               <button
                 onClick={() => logout()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800/80 text-xs font-medium transition"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800/80 text-xs font-medium transition flex-shrink-0"
                 title="Sign out of current analyst session"
               >
                 <LogOut className="w-3.5 h-3.5" />

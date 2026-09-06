@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -6,6 +6,12 @@ import Navbar from "@/components/Navbar";
 export const metadata: Metadata = {
   title: "FraudCopilot | Multi-Agent Fraud Investigation Copilot",
   description: "Ground-truth multi-agent fraud investigation copilot adhering to The Agentic AI Handbook (Comed Kares / ERA Foundation, 2026).",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -19,7 +25,7 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           {/* Main Content Area */}
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 max-w-7xl w-full mx-auto px-3 py-4 sm:p-6 lg:p-8 overflow-x-hidden">
             {children}
           </main>
 

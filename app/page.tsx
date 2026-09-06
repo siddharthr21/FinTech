@@ -21,11 +21,15 @@ import {
   UserCheck,
   Calendar,
   ArrowRight,
+  ArrowLeft,
+  ListFilter,
+  FileText,
 } from "lucide-react";
 
 export default function Dashboard() {
   const { analyst, loading: authLoading } = useAuth();
   const [browseGuest, setBrowseGuest] = useState<boolean>(false);
+  const [mobileTab, setMobileTab] = useState<"queue" | "detail">("queue");
   const [reports, setReports] = useState<InvestigationReport[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -153,60 +157,88 @@ export default function Dashboard() {
       )}
 
       {/* Top Metric Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-4 shadow-sm">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Cases</span>
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Total Cases</span>
             <Database className="w-4 h-4 text-indigo-400" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">{totalCases}</span>
-            <span className="text-xs text-slate-400">monitored</span>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold text-white">{totalCases}</span>
+            <span className="text-[11px] sm:text-xs text-slate-400">monitored</span>
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border border-rose-950/60 rounded-xl p-4 shadow-sm">
+        <div className="bg-[#131b2e] border border-rose-950/60 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-rose-400">Likely Fraud (ATO)</span>
-            <ShieldAlert className="w-4 h-4 text-rose-400" />
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-rose-400 truncate">Likely Fraud</span>
+            <ShieldAlert className="w-4 h-4 text-rose-400 flex-shrink-0" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-rose-400">{highRiskCount}</span>
-            <span className="text-xs text-rose-400/70">corroborated bonus</span>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold text-rose-400">{highRiskCount}</span>
+            <span className="text-[11px] sm:text-xs text-rose-400/70 truncate">corroborated</span>
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border border-amber-950/60 rounded-xl p-4 shadow-sm">
+        <div className="bg-[#131b2e] border border-amber-950/60 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">Pending Review</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-amber-400 truncate">Pending Review</span>
+            <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-amber-400">{pendingCount}</span>
-            <span className="text-xs text-amber-400/70">human checkpoint</span>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold text-amber-400">{pendingCount}</span>
+            <span className="text-[11px] sm:text-xs text-amber-400/70 truncate">checkpoint</span>
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">Oversight Guardrails</span>
-            <Lock className="w-4 h-4 text-purple-400" />
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-purple-400 truncate">Guardrails</span>
+            <Lock className="w-4 h-4 text-purple-400 flex-shrink-0" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-purple-300">{errorCount > 0 ? `${errorCount} Escalate` : "100%"}</span>
-            <span className="text-xs text-slate-400">Ch.8.1 strictly enforced</span>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold text-purple-300">{errorCount > 0 ? `${errorCount} Escalate` : "100%"}</span>
+            <span className="text-[11px] sm:text-xs text-slate-400 truncate">enforced</span>
           </div>
         </div>
       </div>
 
+      {/* Mobile View Switcher (Visible only on screens < lg) */}
+      <div className="lg:hidden flex items-center bg-[#111827] border border-slate-800 rounded-xl p-1 gap-1 shadow-lg">
+        <button
+          onClick={() => setMobileTab("queue")}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+            mobileTab === "queue"
+              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <ListFilter className="w-3.5 h-3.5" />
+          <span>Case Queue ({filteredReports.length})</span>
+        </button>
+        <button
+          onClick={() => setMobileTab("detail")}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+            mobileTab === "detail"
+              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span className="truncate max-w-[130px]">
+            {selectedReport ? selectedReport.transaction_id : "Case Detail"}
+          </span>
+        </button>
+      </div>
+
       {/* Main Split Layout: Queue vs Case Detail */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Investigation Queue (4 cols) */}
-        <div className="lg:col-span-4 bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#141d33]">
+        {/* Left Column: Investigation Queue (4 cols on desktop, full width on mobile) */}
+        <div className={`lg:col-span-4 bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-xl ${mobileTab === "queue" ? "block" : "hidden lg:block"}`}>
+          <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-[#141d33]">
             <div>
               <h2 className="font-semibold text-sm text-slate-200">Investigation Queue</h2>
-              <p className="text-xs text-slate-400">Ranked by fusion confidence score</p>
+              <p className="text-[11px] sm:text-xs text-slate-400">Ranked by fusion confidence score</p>
             </div>
             <button
               onClick={fetchReports}
@@ -218,10 +250,10 @@ export default function Dashboard() {
           </div>
 
           {/* Filter Pills */}
-          <div className="px-3 py-2 bg-[#0d1424] border-b border-slate-800/80 flex gap-1 text-xs">
+          <div className="px-3 py-2 bg-[#0d1424] border-b border-slate-800/80 flex gap-1.5 text-xs overflow-x-auto scrollbar-none">
             <button
               onClick={() => setFilterStatus("all")}
-              className={`px-2.5 py-1 rounded-md font-medium transition ${
+              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
                 filterStatus === "all" ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-800"
               }`}
             >
@@ -229,7 +261,7 @@ export default function Dashboard() {
             </button>
             <button
               onClick={() => setFilterStatus("pending")}
-              className={`px-2.5 py-1 rounded-md font-medium transition ${
+              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
                 filterStatus === "pending" ? "bg-amber-600 text-white" : "text-slate-400 hover:bg-slate-800"
               }`}
             >
@@ -237,7 +269,7 @@ export default function Dashboard() {
             </button>
             <button
               onClick={() => setFilterStatus("error")}
-              className={`px-2.5 py-1 rounded-md font-medium transition ${
+              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
                 filterStatus === "error" ? "bg-rose-700 text-white" : "text-slate-400 hover:bg-slate-800"
               }`}
             >
@@ -245,7 +277,7 @@ export default function Dashboard() {
             </button>
             <button
               onClick={() => setFilterStatus("closed")}
-              className={`px-2.5 py-1 rounded-md font-medium transition ${
+              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
                 filterStatus === "closed" ? "bg-slate-700 text-white" : "text-slate-400 hover:bg-slate-800"
               }`}
             >
@@ -254,7 +286,7 @@ export default function Dashboard() {
           </div>
 
           {/* Queue List */}
-          <div className="divide-y divide-slate-800/60 max-h-[720px] overflow-y-auto">
+          <div className="divide-y divide-slate-800/60 max-h-[580px] sm:max-h-[720px] overflow-y-auto">
             {filteredReports.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs">No cases match the selected filter.</div>
             ) : (
@@ -276,6 +308,7 @@ export default function Dashboard() {
                     onClick={() => {
                       setSelectedReportId(report.report_id);
                       setActionSuccessMessage(null);
+                      setMobileTab("detail");
                     }}
                     className={`p-3.5 cursor-pointer transition flex items-start justify-between gap-3 ${
                       isSelected
@@ -329,40 +362,61 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Case Detail View (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
+        {/* Right Column: Case Detail View (8 cols on desktop, full width on mobile) */}
+        <div className={`lg:col-span-8 space-y-4 sm:space-y-6 ${mobileTab === "detail" ? "block" : "hidden lg:block"}`}>
           {!selectedReport ? (
-            <div className="bg-[#111827] border border-slate-800 rounded-xl p-12 text-center text-slate-500">
+            <div className="bg-[#111827] border border-slate-800 rounded-xl p-8 sm:p-12 text-center text-slate-500">
               <FileSearch className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-              <p>Select a case from the queue to inspect findings and evidence.</p>
+              <p className="text-xs sm:text-sm">Select a case from the queue to inspect findings and evidence.</p>
+              <button
+                onClick={() => setMobileTab("queue")}
+                className="mt-3 lg:hidden px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold inline-flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Go to Case Queue</span>
+              </button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
+              {/* Mobile Back Button */}
+              <div className="lg:hidden flex items-center justify-between pb-1">
+                <button
+                  onClick={() => setMobileTab("queue")}
+                  className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold py-1.5 px-3 rounded-lg bg-indigo-950/50 border border-indigo-800/60 transition shadow-sm"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>&larr; Back to Case Queue</span>
+                </button>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  Case {reports.findIndex(r => r.report_id === selectedReport?.report_id) + 1} of {reports.length}
+                </span>
+              </div>
+
               {/* Case Header Card */}
-              <div className="bg-[#111827] border border-slate-800 rounded-xl p-5 shadow-xl">
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-bold text-white font-mono">{selectedReport.transaction_id}</h2>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 sm:p-5 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800/80 pb-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-bold text-white font-mono">{selectedReport.transaction_id}</h2>
+                      <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 truncate max-w-[200px]">
                         {selectedReport.report_id}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">{selectedReport.summary}</p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{selectedReport.summary}</p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
                     <button
                       onClick={() => setShowRawJsonModal(true)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 flex items-center gap-1.5 transition"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 flex items-center gap-1.5 transition flex-shrink-0"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       Audit Raw JSON
                     </button>
 
-                    <div className="text-right">
-                      <div className="text-xs text-slate-400 font-medium">Confidence Score</div>
-                      <div className="text-2xl font-bold font-mono text-white">
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-[10px] sm:text-xs text-slate-400 font-medium">Confidence Score</div>
+                      <div className="text-xl sm:text-2xl font-bold font-mono text-white">
                         {selectedReport.confidence_score}%
                       </div>
                     </div>
@@ -561,18 +615,19 @@ export default function Dashboard() {
 
                 {/* Traceable Evidence Trail Checklist */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-1">
                     <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      Traceable Evidence Trail (Zero Hallucination Audit)
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Traceable Evidence Trail (Zero Hallucination Audit)</span>
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      Every claim grounded to source data field
+                      <span className="hidden sm:inline">Every claim grounded to source data field</span>
+                      <span className="sm:hidden text-indigo-400 font-medium">&bull; Scroll table &rarr;</span>
                     </span>
                   </div>
 
-                  <div className="overflow-x-auto border border-slate-800 rounded-lg">
-                    <table className="w-full text-left text-xs">
+                  <div className="overflow-x-auto border border-slate-800 rounded-lg -mx-1 sm:mx-0">
+                    <table className="w-full text-left text-xs min-w-[520px]">
                       <thead className="bg-[#141d33] text-slate-400 border-b border-slate-800">
                         <tr>
                           <th className="py-2.5 px-3 font-semibold">Evidence Claim</th>
@@ -735,16 +790,16 @@ export default function Dashboard() {
                       />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
                       {/* Button 1: Approve as Fraud */}
                       <button
                         onClick={() => handleDecision("Approved-Fraud")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20 transition"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20 transition min-h-[44px]"
                       >
-                        <ShieldAlert className="w-4 h-4" />
-                        Approve as Fraud
+                        <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                        <span>Approve as Fraud</span>
                       </button>
 
                       {/* Button 2: Mark False Positive */}
@@ -752,10 +807,10 @@ export default function Dashboard() {
                         onClick={() => handleDecision("False-Positive")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 transition"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 transition min-h-[44px]"
                       >
-                        <ShieldCheck className="w-4 h-4" />
-                        Mark False Positive
+                        <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                        <span>Mark False Positive</span>
                       </button>
 
                       {/* Button 3: Escalate for Manual Review */}
@@ -763,10 +818,10 @@ export default function Dashboard() {
                         onClick={() => handleDecision("Escalated")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/20 transition"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/20 transition min-h-[44px]"
                       >
-                        <AlertTriangle className="w-4 h-4" />
-                        Escalate for Review
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <span>Escalate for Review</span>
                       </button>
                     </div>
                   </div>
@@ -779,28 +834,28 @@ export default function Dashboard() {
 
       {/* Raw JSON Audit Modal */}
       {showRawJsonModal && selectedReport && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#111827] border border-slate-700 rounded-xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-white font-mono">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4">
+          <div className="bg-[#111827] border border-slate-700 rounded-xl max-w-3xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-bold text-white font-mono truncate">
                   Audit Raw JSON: {selectedReport.report_id}
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Action-Level Guardrail Output (Assembled deterministically by code, zero LLM text generation)
+                <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-1">
+                  Action-Level Guardrail Output (Deterministic code assembly)
                 </p>
               </div>
               <button
                 onClick={() => setShowRawJsonModal(false)}
-                className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
               >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 overflow-y-auto flex-1 font-mono text-xs text-emerald-400 bg-[#090d16]">
+            <div className="p-3 sm:p-4 overflow-x-auto overflow-y-auto flex-1 font-mono text-[11px] sm:text-xs text-emerald-400 bg-[#090d16]">
               <pre>{JSON.stringify(selectedReport, null, 2)}</pre>
             </div>
-            <div className="p-3 border-t border-slate-800 bg-[#141d33] flex justify-end">
+            <div className="p-2.5 sm:p-3 border-t border-slate-800 bg-[#141d33] flex justify-end">
               <button
                 onClick={() => setShowRawJsonModal(false)}
                 className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white"
