@@ -1,0 +1,270 @@
+{
+  "name": "Multi-Agent Fraud Investigation Copilot (L2 Human-Gated)",
+  "description": "Orchestrates two parallel specialist agents (Transaction-Pattern and Customer-History) feeding a fusion Risk-Scoring agent with a deterministic report generator, strictly adhering to 'The Agentic AI Handbook' (Ch.3.3 Multi-Agent Orchestration, Ch.9 5-layer oversight).",
+  "flow": [
+    {
+      "id": 1,
+      "module": "airtable:watchRecords",
+      "version": 1,
+      "parameters": {
+        "base": "{{AIRTABLE_BASE_ID}}",
+        "table": "Transactions",
+        "formula": "{flagged} = 1",
+        "limit": 10
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "Trigger: Flagged Transactions"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:router",
+      "version": 1,
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0,
+          "name": "Specialist Domain Router (Ch.3.3)"
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 3,
+              "module": "airtable:searchRecords",
+              "version": 1,
+              "parameters": {
+                "base": "{{AIRTABLE_BASE_ID}}",
+                "table": "Transactions",
+                "formula": "AND({customer_id} = '{{1.customer_id}}', {transaction_id} != '{{1.transaction_id}}')",
+                "sort": [{"field": "timestamp", "direction": "desc"}],
+                "limit": 10
+              },
+              "metadata": {
+                "designer": {
+                  "x": 600,
+                  "y": -150,
+                  "name": "Fetch Recent Transactions"
+                }
+              }
+            },
+            {
+              "id": 4,
+              "module": "anthropic:createMessage",
+              "version": 1,
+              "parameters": {
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 1024,
+                "system": "You are the Transaction-Pattern Agent inside a multi-agent fraud investigation system. Analyze the target transaction against the customer's recent transaction history and flag statistical/behavioral anomalies only. Do not make a final fraud decision. Do not iterate or ask follow-up questions — produce one final structured judgment from the data given.\n\nAnalyze only: VELOCITY, GEOGRAPHY (impossible travel), AMOUNT (deviation from historical mean/std, or structuring just under approval thresholds), MERCHANT (unseen category or high-fraud-rate category). Only report a finding if evidence supports it — never invent anomalies. An empty findings array is a valid and correct output when nothing is anomalous.\n\nRespond ONLY with valid JSON, no prose, no markdown:\n{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"<id>\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"velocity|geography|amount|merchant\",\n      \"severity\": 0-100,\n      \"explanation\": \"one sentence\",\n      \"evidence\": {\n        \"source_field\": \"<field>\",\n        \"observed_value\": \"<value>\",\n        \"baseline_value\": \"<value>\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 0-100\n}",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "Target Transaction: {{1.raw_json}}\n\nRecent Customer Transactions: {{3.raw_json}}"
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": -150,
+                  "name": "Agent 1: Transaction-Pattern"
+                }
+              }
+            },
+            {
+              "id": 5,
+              "module": "json:parseJSON",
+              "version": 1,
+              "parameters": {
+                "json": "{{4.content[1].text}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": -150,
+                  "name": "Parse Agent 1 Output"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 6,
+              "module": "airtable:searchRecords",
+              "version": 1,
+              "parameters": {
+                "base": "{{AIRTABLE_BASE_ID}}",
+                "table": "Customer_History",
+                "formula": "{customer_id} = '{{1.customer_id}}'",
+                "sort": [{"field": "event_timestamp", "direction": "desc"}],
+                "limit": 10
+              },
+              "metadata": {
+                "designer": {
+                  "x": 600,
+                  "y": 150,
+                  "name": "Fetch Customer History"
+                }
+              }
+            },
+            {
+              "id": 7,
+              "module": "airtable:searchRecords",
+              "version": 1,
+              "parameters": {
+                "base": "{{AIRTABLE_BASE_ID}}",
+                "table": "Support_Tickets",
+                "formula": "{customer_id} = '{{1.customer_id}}'",
+                "limit": 5
+              },
+              "metadata": {
+                "designer": {
+                  "x": 800,
+                  "y": 150,
+                  "name": "Fetch Support Tickets"
+                }
+              }
+            },
+            {
+              "id": 8,
+              "module": "anthropic:createMessage",
+              "version": 1,
+              "parameters": {
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 1024,
+                "system": "You are the Customer-History Agent inside a multi-agent fraud investigation system. Contextualize the target transaction using customer profile, behavioral baseline, and prior history. Do not make a final fraud decision. Do not iterate or ask follow-up questions — produce one final structured judgment from the data given.\n\nAnalyze only: ACCOUNT MATURITY (new account + high value transaction), CREDENTIAL CHURN (password reset/device change 24-72h before the transaction), PRIOR FLAGS (past fraud flags/disputes and their resolution), COMPLAINT SIGNAL (recent unauthorized-access support tickets). Only report a finding if evidence supports it. An empty findings array is a valid and correct output when nothing is anomalous.\n\nRespond ONLY with valid JSON, no prose, no markdown:\n{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"<id>\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity|credential_churn|prior_flags|complaint_signal\",\n      \"severity\": 0-100,\n      \"explanation\": \"one sentence\",\n      \"evidence\": {\n        \"source_table\": \"Customers|Customer_History|Support_Tickets\",\n        \"source_record_id\": \"<id>\",\n        \"observed_value\": \"<value>\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 0-100\n}",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "Target Transaction: {{1.raw_json}}\n\nCustomer History: {{6.raw_json}}\n\nSupport Tickets: {{7.raw_json}}"
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1000,
+                  "y": 150,
+                  "name": "Agent 2: Customer-History"
+                }
+              }
+            },
+            {
+              "id": 9,
+              "module": "json:parseJSON",
+              "version": 1,
+              "parameters": {
+                "json": "{{8.content[1].text}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": 150,
+                  "name": "Parse Agent 2 Output"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "module": "anthropic:createMessage",
+      "version": 1,
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "max_tokens": 1024,
+        "system": "You are the Risk-Scoring Agent, the fusion layer of a multi-agent fraud investigation system. You receive the Transaction-Pattern Agent's and Customer-History Agent's JSON outputs — you do not have access to raw transaction or customer data directly. Cross-reference the two inputs: apply a corroboration bonus when findings temporally align across agents (this is the strongest fraud signature, e.g., a device change shortly before a geographically anomalous transaction); apply an isolated-signal discount when a finding has no corroboration, since a single isolated moderate finding should not produce a high-confidence verdict — this is how the system keeps false positives down relative to naive threshold-based legacy systems. Every point of confidence must trace back to a specific finding in the inputs — never assert an ungrounded risk factor. You do not take action and you are not the final decision-maker — a human analyst always makes the final call.\n\nVerdict bands: >=75 \"Likely Fraud\", 40-74 \"Needs Review\", <40 \"Likely Legitimate\".\n\nRespond ONLY with valid JSON, no prose, no markdown:\n{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"<id>\",\n  \"confidence_score\": 0-100,\n  \"verdict\": \"Likely Fraud|Needs Review|Likely Legitimate\",\n  \"fused_reasoning\": \"2-4 sentences, explicitly naming any corroboration\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"plain language claim\",\n      \"source_agent\": \"transaction_pattern|customer_history\",\n      \"source_field\": \"<field>\",\n      \"weight\": \"high|medium|low\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud|Mark False Positive|Escalate for Manual Review\"\n}",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Transaction ID: {{1.transaction_id}}\n\nAgent 1 Findings: {{5.raw_json}}\n\nAgent 2 Findings: {{9.raw_json}}"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 1500,
+          "y": 0,
+          "name": "Agent 3: Risk-Scoring Fusion"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "module": "json:parseJSON",
+      "version": 1,
+      "parameters": {
+        "json": "{{10.content[1].text}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1750,
+          "y": 0,
+          "name": "Parse Agent 3 Output"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "module": "json:createJSON",
+      "version": 1,
+      "parameters": {
+        "dataStructure": {
+          "report_id": "REP-{{1.transaction_id}}-{{formatDate(now; 'X')}}",
+          "transaction_id": "{{1.transaction_id}}",
+          "confidence_score": "{{11.confidence_score}}",
+          "verdict": "{{11.verdict}}",
+          "evidence_trail": "{{11.evidence_trail}}",
+          "agent1_output_json": "{{5.raw_json}}",
+          "agent2_output_json": "{{9.raw_json}}",
+          "agent3_output_json": "{{11.raw_json}}",
+          "pipeline_status": "Pending Analyst Review",
+          "created_at": "{{formatDate(now; 'YYYY-MM-DDTHH:mm:ssZ')}}"
+        }
+      },
+      "metadata": {
+        "designer": {
+          "x": 2000,
+          "y": 0,
+          "name": "Deterministic Report Assembly (Action Guardrail Ch.9.2)"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "module": "airtable:createRecord",
+      "version": 1,
+      "parameters": {
+        "base": "{{AIRTABLE_BASE_ID}}",
+        "table": "Investigation_Reports",
+        "fields": {
+          "report_id": "REP-{{1.transaction_id}}-{{formatDate(now; 'X')}}",
+          "transaction_id": "{{1.transaction_id}}",
+          "confidence_score": "{{11.confidence_score}}",
+          "verdict": "{{11.verdict}}",
+          "evidence_trail": "{{11.evidence_trail}}",
+          "agent1_output_json": "{{5.raw_json}}",
+          "agent2_output_json": "{{9.raw_json}}",
+          "agent3_output_json": "{{11.raw_json}}",
+          "pipeline_status": "Pending Analyst Review",
+          "created_at": "{{formatDate(now; 'YYYY-MM-DDTHH:mm:ssZ')}}"
+        }
+      },
+      "metadata": {
+        "designer": {
+          "x": 2300,
+          "y": 0,
+          "name": "Store Investigation Report"
+        }
+      }
+    }
+  ]
+}

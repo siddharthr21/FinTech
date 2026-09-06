@@ -1,0 +1,215 @@
+[
+  {
+    "report_id": "REP-TX-98214-1788692676",
+    "transaction_id": "TX-98214",
+    "summary": "Copilot assessed TX TX-98214 as 'Likely Fraud' (Confidence: 94%). Detected 3 pattern anomalies and 2 contextual history signals.",
+    "confidence_score": 94,
+    "verdict": "Likely Fraud",
+    "detected_patterns": [
+      {
+        "anomaly_type": "geography",
+        "severity": 95,
+        "explanation": "Transaction location in Moscow, RU indicates impossible travel from Seattle baseline within 72 hours.",
+        "evidence": {
+          "source_field": "location",
+          "observed_value": "Moscow, RU",
+          "baseline_value": "Seattle, WA, USA"
+        }
+      },
+      {
+        "anomaly_type": "amount",
+        "severity": 90,
+        "explanation": "Transaction amount of $3850.00 is 45x greater than customer historical mean of $84.16.",
+        "evidence": {
+          "source_field": "amount",
+          "observed_value": "$3850.00",
+          "baseline_value": "Historical Mean: $84.16"
+        }
+      },
+      {
+        "anomaly_type": "merchant",
+        "severity": 80,
+        "explanation": "High-risk consumer electronics merchant category never previously utilized by this account.",
+        "evidence": {
+          "source_field": "merchant_category",
+          "observed_value": "Consumer Electronics & High-End Tech",
+          "baseline_value": "Groceries, Retail, Fuel"
+        }
+      }
+    ],
+    "customer_context": [
+      {
+        "signal_type": "credential_churn",
+        "severity": 95,
+        "explanation": "Password reset and new unrecognized device (DEV-UNK-9941) registered within 36 hours prior to transaction.",
+        "evidence": {
+          "source_table": "Customer_History",
+          "source_record_id": "EVT-5011 / EVT-5012",
+          "observed_value": "Password_Reset (2026-09-04T18:22:10Z) followed by Device_Change from foreign IP"
+        }
+      },
+      {
+        "signal_type": "complaint_signal",
+        "severity": 90,
+        "explanation": "Customer opened high-priority support ticket reporting unauthorized password reset SMS alert.",
+        "evidence": {
+          "source_table": "Support_Tickets",
+          "source_record_id": "TCK-8812",
+          "observed_value": "Customer reported: 'I received an SMS that my password was reset, but I did not do this.'"
+        }
+      }
+    ],
+    "fused_reasoning": "CORROBORATION BONUS APPLIED: High-value transaction in Moscow ($3,850.00) temporally aligns with an unauthorized password reset and device change (EVT-5011/EVT-5012) 26-36 hours prior, directly corroborated by customer support ticket TCK-8812 reporting unauthorized access. Classic textbook ATO fraud signature.",
+    "evidence_trail": [
+      {
+        "claim": "Impossible geographic travel to Moscow, RU with 45x historical spend surge",
+        "source_agent": "transaction_pattern",
+        "source_field": "location / amount",
+        "weight": "high"
+      },
+      {
+        "claim": "Unrecognized password reset and device switch 26-36h prior to transaction",
+        "source_agent": "customer_history",
+        "source_field": "Customer_History.event_type",
+        "weight": "high"
+      },
+      {
+        "claim": "Customer explicit complaint regarding unauthorized password reset notification",
+        "source_agent": "customer_history",
+        "source_field": "Support_Tickets.notes (TCK-8812)",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Approve as Fraud",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98214\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"geography\",\n      \"severity\": 95,\n      \"explanation\": \"Transaction location in Moscow, RU indicates impossible travel from Seattle baseline within 72 hours.\",\n      \"evidence\": {\n        \"source_field\": \"location\",\n        \"observed_value\": \"Moscow, RU\",\n        \"baseline_value\": \"Seattle, WA, USA\"\n      }\n    },\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 90,\n      \"explanation\": \"Transaction amount of $3850.00 is 45x greater than customer historical mean of $84.16.\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"$3850.00\",\n        \"baseline_value\": \"Historical Mean: $84.16\"\n      }\n    },\n    {\n      \"anomaly_type\": \"merchant\",\n      \"severity\": 80,\n      \"explanation\": \"High-risk consumer electronics merchant category never previously utilized by this account.\",\n      \"evidence\": {\n        \"source_field\": \"merchant_category\",\n        \"observed_value\": \"Consumer Electronics & High-End Tech\",\n        \"baseline_value\": \"Groceries, Retail, Fuel\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 92\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-10492\",\n  \"findings\": [\n    {\n      \"signal_type\": \"credential_churn\",\n      \"severity\": 95,\n      \"explanation\": \"Password reset and new unrecognized device (DEV-UNK-9941) registered within 36 hours prior to transaction.\",\n      \"evidence\": {\n        \"source_table\": \"Customer_History\",\n        \"source_record_id\": \"EVT-5011 / EVT-5012\",\n        \"observed_value\": \"Password_Reset (2026-09-04T18:22:10Z) followed by Device_Change from foreign IP\"\n      }\n    },\n    {\n      \"signal_type\": \"complaint_signal\",\n      \"severity\": 90,\n      \"explanation\": \"Customer opened high-priority support ticket reporting unauthorized password reset SMS alert.\",\n      \"evidence\": {\n        \"source_table\": \"Support_Tickets\",\n        \"source_record_id\": \"TCK-8812\",\n        \"observed_value\": \"Customer reported: 'I received an SMS that my password was reset, but I did not do this.'\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 95\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98214\",\n  \"confidence_score\": 94,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"CORROBORATION BONUS APPLIED: High-value transaction in Moscow ($3,850.00) temporally aligns with an unauthorized password reset and device change (EVT-5011/EVT-5012) 26-36 hours prior, directly corroborated by customer support ticket TCK-8812 reporting unauthorized access. Classic textbook ATO fraud signature.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Impossible geographic travel to Moscow, RU with 45x historical spend surge\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"location / amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Unrecognized password reset and device switch 26-36h prior to transaction\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customer_History.event_type\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Customer explicit complaint regarding unauthorized password reset notification\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Support_Tickets.notes (TCK-8812)\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "created_at": "2026-09-06T11:04:36.999917+00:00"
+  },
+  {
+    "report_id": "REP-TX-98215-1788692677",
+    "transaction_id": "TX-98215",
+    "summary": "Copilot assessed TX TX-98215 as 'Likely Legitimate' (Confidence: 38%). Detected 1 pattern anomaly and 0 contextual history signals.",
+    "confidence_score": 38,
+    "verdict": "Likely Legitimate",
+    "detected_patterns": [
+      {
+        "anomaly_type": "geography",
+        "severity": 45,
+        "explanation": "Transaction location New York, NY deviates from San Francisco home location.",
+        "evidence": {
+          "source_field": "location",
+          "observed_value": "New York, NY, USA",
+          "baseline_value": "San Francisco, CA, USA"
+        }
+      }
+    ],
+    "customer_context": [],
+    "fused_reasoning": "ISOLATED-SIGNAL DISCOUNT APPLIED: Detected geographic deviation to New York, but Customer-History shows zero credential churn, historical travel notification (TCK-8813), and biometric authentication on known device (DEV-KNOWN-7712). Isolated pattern anomaly without corroboration is discounted to prevent false-positive alert fatigue.",
+    "evidence_trail": [
+      {
+        "claim": "Geographic location New York, NY differs from home location",
+        "source_agent": "transaction_pattern",
+        "source_field": "location",
+        "weight": "medium"
+      },
+      {
+        "claim": "Biometric authentication on verified primary device DEV-KNOWN-7712 with zero credential churn",
+        "source_agent": "customer_history",
+        "source_field": "Customer_History.device_id",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Mark False Positive",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98215\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"geography\",\n      \"severity\": 45,\n      \"explanation\": \"Transaction location New York, NY deviates from San Francisco home location.\",\n      \"evidence\": {\n        \"source_field\": \"location\",\n        \"observed_value\": \"New York, NY, USA\",\n        \"baseline_value\": \"San Francisco, CA, USA\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 45\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-20811\",\n  \"findings\": [],\n  \"overall_context_risk\": 15\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98215\",\n  \"confidence_score\": 38,\n  \"verdict\": \"Likely Legitimate\",\n  \"fused_reasoning\": \"ISOLATED-SIGNAL DISCOUNT APPLIED: Detected geographic deviation to New York, but Customer-History shows zero credential churn, historical travel notification (TCK-8813), and biometric authentication on known device (DEV-KNOWN-7712). Isolated pattern anomaly without corroboration is discounted to prevent false-positive alert fatigue.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Geographic location New York, NY differs from home location\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"location\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"Biometric authentication on verified primary device DEV-KNOWN-7712 with zero credential churn\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customer_History.device_id\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Mark False Positive\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "created_at": "2026-09-06T11:04:37.000155+00:00"
+  },
+  {
+    "report_id": "REP-TX-98217-1788692677",
+    "transaction_id": "TX-98217",
+    "summary": "Copilot assessed TX TX-98217 as 'Needs Review' (Confidence: 68%). Detected 1 pattern anomaly and 1 contextual history signal.",
+    "confidence_score": 68,
+    "verdict": "Needs Review",
+    "detected_patterns": [
+      {
+        "anomaly_type": "amount",
+        "severity": 75,
+        "explanation": "Amount of $990.00 structured just below the standard $1,000 reporting threshold.",
+        "evidence": {
+          "source_field": "amount",
+          "observed_value": "$990.00",
+          "baseline_value": "Reporting Threshold: $1,000.00"
+        }
+      }
+    ],
+    "customer_context": [
+      {
+        "signal_type": "account_maturity",
+        "severity": 60,
+        "explanation": "Account opened less than 45 days ago transacting near threshold limit.",
+        "evidence": {
+          "source_table": "Customers",
+          "source_record_id": "CUST-40115",
+          "observed_value": "Open Date: 2026-08-01"
+        }
+      }
+    ],
+    "fused_reasoning": "Moderate risk detected: Amount structuring just below regulatory $1,000 threshold on a relatively new account (<45 days). While no device churn exists, rapid remittance transfer warrants manual compliance review.",
+    "evidence_trail": [
+      {
+        "claim": "Transaction amount of $990.00 indicates potential structuring",
+        "source_agent": "transaction_pattern",
+        "source_field": "amount",
+        "weight": "high"
+      },
+      {
+        "claim": "Account opened recently (2026-08-01) with limited established baseline",
+        "source_agent": "customer_history",
+        "source_field": "Customers.account_open_date",
+        "weight": "medium"
+      }
+    ],
+    "recommended_action": "Escalate for Manual Review",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98217\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 75,\n      \"explanation\": \"Amount of $990.00 structured just below the standard $1,000 reporting threshold.\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"$990.00\",\n        \"baseline_value\": \"Reporting Threshold: $1,000.00\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 70\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-40115\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 60,\n      \"explanation\": \"Account opened less than 45 days ago transacting near threshold limit.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-40115\",\n        \"observed_value\": \"Open Date: 2026-08-01\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 55\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98217\",\n  \"confidence_score\": 68,\n  \"verdict\": \"Needs Review\",\n  \"fused_reasoning\": \"Moderate risk detected: Amount structuring just below regulatory $1,000 threshold on a relatively new account (<45 days). While no device churn exists, rapid remittance transfer warrants manual compliance review.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Transaction amount of $990.00 indicates potential structuring\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Account opened recently (2026-08-01) with limited established baseline\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customers.account_open_date\",\n      \"weight\": \"medium\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Escalate for Manual Review\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "created_at": "2026-09-06T11:04:37.000258+00:00"
+  },
+  {
+    "report_id": "REP-TX-ERR-9999-1788692677",
+    "transaction_id": "TX-ERR-9999",
+    "summary": "SYSTEM ERROR: Investigation pipeline failed schema validation. Escalated to manual review.",
+    "confidence_score": 0,
+    "verdict": "Needs Review",
+    "detected_patterns": [],
+    "customer_context": [],
+    "fused_reasoning": "Audit Pipeline Error: Pipeline error: Simulation: Agent 1 failed to emit valid JSON; Agent 1 (Transaction-Pattern) malformed or missing output.; Agent 3 (Risk-Scoring Fusion) malformed or missing output.. Per Handbook Ch.8.1, this non-retryable error requires manual analyst inspection.",
+    "evidence_trail": [
+      {
+        "claim": "Pipeline execution schema violation detected",
+        "source_agent": "system_guardrail",
+        "source_field": "pipeline_validation",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Escalate for Manual Review",
+    "pipeline_status": "Agent Error - Manual Review Required",
+    "agent1_output_json": "{}",
+    "agent2_output_json": "{\"agent\": \"customer_history\", \"customer_id\": \"CUST-10492\", \"findings\": [], \"overall_context_risk\": 10}",
+    "agent3_output_json": "{}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "created_at": "2026-09-06T11:04:37.000328+00:00"
+  }
+]

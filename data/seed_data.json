@@ -1,0 +1,248 @@
+{
+  "customers": [
+    {
+      "customer_id": "CUST-10492",
+      "name": "Elena Rostova",
+      "kyc_tier": "Tier 2",
+      "account_open_date": "2023-04-15",
+      "home_location": "Seattle, WA, USA",
+      "avg_monthly_spend": 2450.00,
+      "preferred_merchants": "Amazon, Whole Foods, Target, Shell, Nordstrom",
+      "risk_flag_count_lifetime": 0
+    },
+    {
+      "customer_id": "CUST-20811",
+      "name": "Marcus Chen",
+      "kyc_tier": "Tier 1",
+      "account_open_date": "2021-08-20",
+      "home_location": "San Francisco, CA, USA",
+      "avg_monthly_spend": 4120.00,
+      "preferred_merchants": "Uber, Delta Air Lines, Apple, Blue Bottle Coffee",
+      "risk_flag_count_lifetime": 1
+    },
+    {
+      "customer_id": "CUST-30944",
+      "name": "Sarah Jenkins",
+      "kyc_tier": "Tier 3",
+      "account_open_date": "2020-01-10",
+      "home_location": "Austin, TX, USA",
+      "avg_monthly_spend": 6800.00,
+      "preferred_merchants": "H-E-B, Equinox, Patagonia, Central Market",
+      "risk_flag_count_lifetime": 0
+    },
+    {
+      "customer_id": "CUST-40115",
+      "name": "David Miller",
+      "kyc_tier": "Tier 1",
+      "account_open_date": "2026-08-01",
+      "home_location": "Chicago, IL, USA",
+      "avg_monthly_spend": 850.00,
+      "preferred_merchants": "Walgreens, CTA, Trader Joe's",
+      "risk_flag_count_lifetime": 0
+    }
+  ],
+  "transactions": [
+    {
+      "transaction_id": "TX-98214",
+      "customer_id": "CUST-10492",
+      "timestamp": "2026-09-06T03:14:22Z",
+      "amount": 3850.00,
+      "merchant": "Apex Luxury Electronics",
+      "merchant_category": "Consumer Electronics & High-End Tech",
+      "location": "Moscow, RU",
+      "device_id": "DEV-UNK-9941",
+      "ip_address": "185.220.101.44",
+      "payment_method": "Virtual Visa ending 4109",
+      "status": "Completed",
+      "flagged": true
+    },
+    {
+      "transaction_id": "TX-98215",
+      "customer_id": "CUST-20811",
+      "timestamp": "2026-09-06T08:20:15Z",
+      "amount": 480.00,
+      "merchant": "Delta Air Lines",
+      "merchant_category": "Airlines & Travel",
+      "location": "New York, NY, USA",
+      "device_id": "DEV-KNOWN-7712",
+      "ip_address": "12.180.45.10",
+      "payment_method": "Apple Pay",
+      "status": "Completed",
+      "flagged": true
+    },
+    {
+      "transaction_id": "TX-98216",
+      "customer_id": "CUST-30944",
+      "timestamp": "2026-09-06T12:05:00Z",
+      "amount": 64.50,
+      "merchant": "Whole Foods Market",
+      "merchant_category": "Grocery",
+      "location": "Austin, TX, USA",
+      "device_id": "DEV-KNOWN-3301",
+      "ip_address": "73.155.88.22",
+      "payment_method": "Physical Card Chip",
+      "status": "Completed",
+      "flagged": false
+    },
+    {
+      "transaction_id": "TX-98217",
+      "customer_id": "CUST-40115",
+      "timestamp": "2026-09-06T04:45:10Z",
+      "amount": 990.00,
+      "merchant": "Global Remit Wire",
+      "merchant_category": "Money Transfer",
+      "location": "Chicago, IL, USA",
+      "device_id": "DEV-KNOWN-5522",
+      "ip_address": "98.220.14.77",
+      "payment_method": "Debit Card",
+      "status": "Completed",
+      "flagged": true
+    }
+  ],
+  "recent_transactions": [
+    {
+      "transaction_id": "TX-97810",
+      "customer_id": "CUST-10492",
+      "timestamp": "2026-09-03T14:10:00Z",
+      "amount": 82.40,
+      "merchant": "Whole Foods Market",
+      "merchant_category": "Grocery",
+      "location": "Seattle, WA, USA",
+      "device_id": "DEV-KNOWN-1002",
+      "ip_address": "71.212.90.11",
+      "payment_method": "Apple Pay",
+      "status": "Completed",
+      "flagged": false
+    },
+    {
+      "transaction_id": "TX-97811",
+      "customer_id": "CUST-10492",
+      "timestamp": "2026-09-02T18:45:12Z",
+      "amount": 45.10,
+      "merchant": "Shell Gas Station",
+      "merchant_category": "Fuel",
+      "location": "Seattle, WA, USA",
+      "device_id": "DEV-KNOWN-1002",
+      "ip_address": "71.212.90.11",
+      "payment_method": "Physical Card Chip",
+      "status": "Completed",
+      "flagged": false
+    },
+    {
+      "transaction_id": "TX-97812",
+      "customer_id": "CUST-10492",
+      "timestamp": "2026-08-30T11:20:30Z",
+      "amount": 124.99,
+      "merchant": "Target",
+      "merchant_category": "Retail",
+      "location": "Seattle, WA, USA",
+      "device_id": "DEV-KNOWN-1002",
+      "ip_address": "71.212.90.11",
+      "payment_method": "Apple Pay",
+      "status": "Completed",
+      "flagged": false
+    },
+    {
+      "transaction_id": "TX-97901",
+      "customer_id": "CUST-20811",
+      "timestamp": "2026-09-04T09:12:00Z",
+      "amount": 42.00,
+      "merchant": "Uber",
+      "merchant_category": "Transportation",
+      "location": "San Francisco, CA, USA",
+      "device_id": "DEV-KNOWN-7712",
+      "ip_address": "12.180.45.10",
+      "payment_method": "Apple Pay",
+      "status": "Completed",
+      "flagged": false
+    },
+    {
+      "transaction_id": "TX-97902",
+      "customer_id": "CUST-20811",
+      "timestamp": "2026-09-02T19:30:00Z",
+      "amount": 180.50,
+      "merchant": "Blue Bottle Coffee & Dining",
+      "merchant_category": "Food & Beverage",
+      "location": "San Francisco, CA, USA",
+      "device_id": "DEV-KNOWN-7712",
+      "ip_address": "12.180.45.10",
+      "payment_method": "Apple Pay",
+      "status": "Completed",
+      "flagged": false
+    }
+  ],
+  "customer_history": [
+    {
+      "event_id": "EVT-5011",
+      "customer_id": "CUST-10492",
+      "event_type": "Password_Reset",
+      "event_timestamp": "2026-09-04T18:22:10Z",
+      "device_id": "DEV-UNK-9941",
+      "resolution": "Completed via Web Self-Service",
+      "notes": "Password reset initiated via unrecognized IP (185.220.101.44) and new device."
+    },
+    {
+      "event_id": "EVT-5012",
+      "customer_id": "CUST-10492",
+      "event_type": "Device_Change",
+      "event_timestamp": "2026-09-05T01:10:04Z",
+      "device_id": "DEV-UNK-9941",
+      "resolution": "New Device Registered",
+      "notes": "Unrecognized Linux/Chrome device registered 26 hours prior to high-value transaction."
+    },
+    {
+      "event_id": "EVT-5013",
+      "customer_id": "CUST-10492",
+      "event_type": "Login",
+      "event_timestamp": "2026-09-06T03:05:11Z",
+      "device_id": "DEV-UNK-9941",
+      "resolution": "Success",
+      "notes": "Session established 9 minutes before transaction TX-98214."
+    },
+    {
+      "event_id": "EVT-6001",
+      "customer_id": "CUST-20811",
+      "event_type": "Login",
+      "event_timestamp": "2026-09-06T08:15:00Z",
+      "device_id": "DEV-KNOWN-7712",
+      "resolution": "Success",
+      "notes": "Routine biometric login from established device."
+    },
+    {
+      "event_id": "EVT-7001",
+      "customer_id": "CUST-30944",
+      "event_type": "Login",
+      "event_timestamp": "2026-09-06T11:50:00Z",
+      "device_id": "DEV-KNOWN-3301",
+      "resolution": "Success",
+      "notes": "Routine biometric login from established device."
+    },
+    {
+      "event_id": "EVT-8001",
+      "customer_id": "CUST-40115",
+      "event_type": "Login",
+      "event_timestamp": "2026-09-06T04:20:00Z",
+      "device_id": "DEV-KNOWN-5522",
+      "resolution": "Success",
+      "notes": "Mobile login."
+    }
+  ],
+  "support_tickets": [
+    {
+      "ticket_id": "TCK-8812",
+      "customer_id": "CUST-10492",
+      "category": "Unauthorized Access / Suspicious Alert",
+      "sentiment": "Negative",
+      "resolution_time_hrs": 1.5,
+      "notes": "Customer reported: 'I just received a text that my password was reset, but I did not do this. Please secure my account!'"
+    },
+    {
+      "ticket_id": "TCK-8813",
+      "customer_id": "CUST-20811",
+      "category": "Travel Notification",
+      "sentiment": "Neutral",
+      "resolution_time_hrs": 0.4,
+      "notes": "Customer informed bank of upcoming travel to New York conference."
+    }
+  ]
+}
