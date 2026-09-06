@@ -45,5 +45,17 @@ export interface InvestigationReport {
   agent3_output_json: string;
   analyst_decision: "Approved-Fraud" | "False-Positive" | "Escalated" | null;
   analyst_notes: string | null;
+  closed_by?: string | null;
+  closed_at?: string | null;
   created_at: string;
+}
+
+export interface AnalystUser {
+  id: string; // e.g. "ANL-802"
+  name: string; // e.g. "Sarah Chen"
+  email: string;
+  role: string; // e.g. "Lead Fraud Investigator"
+  tier: string; // e.g. "Tier 3 (Principal Reviewer)"
+  initials: string;
+  badgeColor: string;
 }

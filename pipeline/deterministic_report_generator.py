@@ -130,6 +130,8 @@ def build_deterministic_investigation_report(
             "agent3_output_json": json.dumps(agent3_output) if agent3_output else "{}",
             "analyst_decision": None,
             "analyst_notes": None,
+            "closed_by": None,
+            "closed_at": None,
             "created_at": now_iso
         }
 
@@ -162,5 +164,7 @@ def build_deterministic_investigation_report(
         "agent3_output_json": json.dumps(agent3_output, indent=2),
         "analyst_decision": None,
         "analyst_notes": None,
+        "closed_by": None,
+        "closed_at": None,
         "created_at": now_iso
     }

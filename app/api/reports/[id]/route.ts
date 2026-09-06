@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateAnalystDecision } from "@/lib/airtable";
+import { getAuthenticatedAnalystFromRequest } from "@/lib/auth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const analyst = getAuthenticatedAnalystFromRequest(request);
+    if (!analyst) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Authentication required (Handbook Layer 1 & Layer 3 Oversight): You must be signed in as an authorized fraud analyst to execute case determinations.",
+        },
+        { status: 401 }
+      );
+    }
+
     const reportId = params.id;
     const body = await request.json();
     const { decision, notes } = body;
@@ -18,7 +30,7 @@ export async function PATCH(
       );
     }
 
-    const updated = await updateAnalystDecision(reportId, decision, notes || "");
+    const updated = await updateAnalystDecision(reportId, decision, notes || "", analyst);
     if (!updated) {
       return NextResponse.json(
         { success: false, error: "Report not found or failed to update" },
@@ -28,7 +40,9 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: `Case ${reportId} successfully resolved as ${decision}. Pipeline status updated to Closed.`,
+      message: `Case ${reportId} successfully resolved as ${decision} by ${analyst.name} (${analyst.id}). Pipeline status updated to Closed.`,
+      closed_by: `${analyst.name} (${analyst.id})`,
+      closed_at: new Date().toISOString(),
     });
   } catch (error: any) {
     return NextResponse.json(

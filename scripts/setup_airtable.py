@@ -159,6 +159,8 @@ TABLE_DEFINITIONS = [
                 }
             },
             {"name": "analyst_notes", "type": "multilineText"},
+            {"name": "closed_by", "type": "singleLineText"},
+            {"name": "closed_at", "type": "singleLineText"},
             {"name": "created_at", "type": "singleLineText"},
             {
                 "name": "pipeline_status",
@@ -275,6 +277,10 @@ def populate_seed_data(base_id: str, seed_data_path: str = "data/seed_data.json"
                 fields["analyst_decision"] = r.get("analyst_decision")
             if r.get("analyst_notes"):
                 fields["analyst_notes"] = r.get("analyst_notes")
+            if r.get("closed_by"):
+                fields["closed_by"] = r.get("closed_by")
+            if r.get("closed_at"):
+                fields["closed_at"] = r.get("closed_at")
             records.append({"fields": fields})
         url = f"https://api.airtable.com/v0/{base_id}/Investigation_Reports"
         make_airtable_request(url, method="POST", payload={"records": records, "typecast": True})

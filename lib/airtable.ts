@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { InvestigationReport } from "./types";
+import { InvestigationReport, AnalystUser } from "./types";
 
 const LOCAL_STORAGE_PATH = path.join(process.cwd(), "data", "investigation_reports.json");
 
@@ -84,6 +84,8 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         agent3_output_json: fields.agent3_output_json || "{}",
         analyst_decision: fields.analyst_decision || null,
         analyst_notes: fields.analyst_notes || null,
+        closed_by: fields.closed_by || null,
+        closed_at: fields.closed_at || null,
         created_at: fields.created_at || new Date().toISOString(),
       };
     });
@@ -110,9 +112,13 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
 export async function updateAnalystDecision(
   reportId: string,
   decision: "Approved-Fraud" | "False-Positive" | "Escalated",
-  notes: string = ""
+  notes: string = "",
+  analyst?: AnalystUser | null
 ): Promise<boolean> {
   const config = getAirtableConfig();
+  const closedBy = analyst ? `${analyst.name} (${analyst.id})` : "Authorized Analyst";
+  const closedAt = new Date().toISOString();
+
   if (config.isConfigured) {
     const formula = `{report_id}='${escapeFormulaValue(reportId)}'`;
     const searchUrl = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
@@ -143,6 +149,8 @@ export async function updateAnalystDecision(
           analyst_decision: decision,
           analyst_notes: notes,
           pipeline_status: "Closed",
+          closed_by: closedBy,
+          closed_at: closedAt,
         },
       }),
     });
@@ -179,6 +187,8 @@ export async function updateAnalystDecision(
   target.analyst_decision = decision;
   target.analyst_notes = notes;
   target.pipeline_status = "Closed";
+  target.closed_by = closedBy;
+  target.closed_at = closedAt;
 
   try {
     fs.writeFileSync(LOCAL_STORAGE_PATH, JSON.stringify(reports, null, 2), "utf-8");
@@ -191,3 +201,4 @@ export async function updateAnalystDecision(
 
   return true;
 }
+

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { InvestigationReport } from "@/lib/types";
+import { useAuth } from "@/context/AuthContext";
+import AnalystSignIn from "@/components/AnalystSignIn";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -15,10 +17,13 @@ import {
   Eye,
   Sparkles,
   Lock,
-  Database
+  Database,
+  UserCheck,
+  Calendar,
 } from "lucide-react";
 
 export default function Dashboard() {
+  const { analyst, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<InvestigationReport[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -29,7 +34,7 @@ export default function Dashboard() {
   const [showRawJsonModal, setShowRawJsonModal] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/reports", { cache: "no-store" });
@@ -50,16 +55,20 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedReportId]);
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [fetchReports]);
 
   const selectedReport = reports.find((r) => r.report_id === selectedReportId) || reports[0];
 
   const handleDecision = async (decision: "Approved-Fraud" | "False-Positive" | "Escalated") => {
     if (!selectedReport) return;
+    if (!analyst) {
+      alert("Authentication required (Handbook Layer 1 & 3): Please sign in as an authorized analyst before executing case decisions.");
+      return;
+    }
     setSubmitting(true);
     setActionSuccessMessage(null);
 
@@ -75,7 +84,8 @@ export default function Dashboard() {
 
       const data = await res.json();
       if (data.success) {
-        setActionSuccessMessage(`Success: Case marked as ${decision}. Status updated to Closed.`);
+        const closedByText = data.closed_by || `${analyst.name} (${analyst.id})`;
+        setActionSuccessMessage(`Success: Case marked as ${decision} by ${closedByText}. Audit datastore updated to Closed.`);
         setAnalystNotes("");
         // Refresh reports list
         await fetchReports();
@@ -106,6 +116,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Analyst Sign-In Gateway (Handbook Layer 1 & 3) */}
+      {!analyst && !authLoading && <AnalystSignIn />}
+
       {loadError && (
         <div className="p-3.5 rounded-lg bg-rose-950/70 border border-rose-800 text-xs text-rose-200 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
@@ -258,8 +271,13 @@ export default function Dashboard() {
                           </span>
                         )}
                         {isClosed && (
-                          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold">
-                            {report.analyst_decision || "Closed"}
+                          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold flex items-center gap-1">
+                            <span>{report.analyst_decision || "Closed"}</span>
+                            {report.closed_by && (
+                              <span className="text-emerald-400 font-normal">
+                                &bull; {report.closed_by.split(" ")[0]}
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -591,6 +609,34 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* Active Analyst Signer Context */}
+                {analyst ? (
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-indigo-950/60 border border-indigo-800/70 text-xs">
+                    <div
+                      className={`h-6 w-6 rounded-full bg-gradient-to-br ${analyst.badgeColor || "from-indigo-600 to-indigo-800"} flex items-center justify-center text-[10px] font-bold text-white shadow`}
+                    >
+                      {analyst.initials}
+                    </div>
+                    <div className="flex-1 flex flex-wrap items-center justify-between gap-1">
+                      <div>
+                        <span className="text-slate-400">Authorized Investigator:</span>{" "}
+                        <span className="font-bold text-white">{analyst.name}</span>{" "}
+                        <span className="font-mono text-[11px] text-indigo-300">({analyst.id})</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900 text-indigo-200 border border-indigo-700 font-mono">
+                        {analyst.tier}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-amber-950/60 border border-amber-800/70 text-xs text-amber-200">
+                    <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <span>
+                      <strong>Analyst Sign-In Required:</strong> Under Handbook Chapter 9.1 &amp; 9.3, case dispositions cannot be executed without authenticated analyst sign-off.
+                    </span>
+                  </div>
+                )}
+
                 {actionSuccessMessage && (
                   <div className="p-3 rounded-lg bg-emerald-950/80 border border-emerald-700 text-xs text-emerald-200 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -600,27 +646,53 @@ export default function Dashboard() {
 
                 {/* Analyst Decision History if already closed */}
                 {selectedReport.pipeline_status === "Closed" ? (
-                  <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-semibold">Finalized Analyst Decision:</span>
-                      <span className="px-2 py-0.5 rounded bg-indigo-900 text-indigo-200 font-bold font-mono">
-                        {selectedReport.analyst_decision}
-                      </span>
+                  <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 font-semibold">Finalized Analyst Decision:</span>
+                        <span className="px-2.5 py-0.5 rounded bg-indigo-900 text-indigo-200 font-bold font-mono">
+                          {selectedReport.analyst_decision}
+                        </span>
+                      </div>
+                      {selectedReport.closed_by && (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800/90 px-2.5 py-1 rounded-md border border-slate-700">
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-slate-400">Closed by:</span>
+                          <span className="font-bold text-white">{selectedReport.closed_by}</span>
+                        </div>
+                      )}
                     </div>
-                    {selectedReport.analyst_notes && (
-                      <p className="text-xs text-slate-300 italic">
-                        &quot;{selectedReport.analyst_notes}&quot;
-                      </p>
+
+                    {selectedReport.closed_at && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Resolution Timestamp:</span>
+                        <span className="font-mono text-slate-300">
+                          {new Date(selectedReport.closed_at).toLocaleString()}
+                        </span>
+                      </div>
                     )}
-                    <div className="text-[11px] text-slate-500">
-                      Stopping condition satisfied (Handbook Ch.4.4): Case marked Closed by authorized analyst.
+
+                    {selectedReport.analyst_notes && (
+                      <div className="p-2.5 rounded bg-[#090d16] border border-slate-800">
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold block mb-0.5">
+                          Analyst Audit Notes:
+                        </span>
+                        <p className="text-xs text-slate-300 italic">
+                          &quot;{selectedReport.analyst_notes}&quot;
+                        </p>
+                      </div>
+                    )}
+                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Stopping condition satisfied (Handbook Ch.4.4 &amp; Ch.9.5): Final disposition recorded to audit datastore.</span>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Analyst Notes / Rationale (Logged to Airtable Audit Trail)
+                        Analyst Notes / Rationale (Logged with Analyst Attribution to Audit Trail)
                       </label>
                       <textarea
                         value={analystNotes}
@@ -635,8 +707,9 @@ export default function Dashboard() {
                       {/* Button 1: Approve as Fraud */}
                       <button
                         onClick={() => handleDecision("Approved-Fraud")}
-                        disabled={submitting}
-                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20 transition"
+                        disabled={submitting || !analyst}
+                        title={!analyst ? "Sign in as an analyst to enable" : undefined}
+                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20 transition"
                       >
                         <ShieldAlert className="w-4 h-4" />
                         Approve as Fraud
@@ -645,8 +718,9 @@ export default function Dashboard() {
                       {/* Button 2: Mark False Positive */}
                       <button
                         onClick={() => handleDecision("False-Positive")}
-                        disabled={submitting}
-                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 transition"
+                        disabled={submitting || !analyst}
+                        title={!analyst ? "Sign in as an analyst to enable" : undefined}
+                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 transition"
                       >
                         <ShieldCheck className="w-4 h-4" />
                         Mark False Positive
@@ -655,8 +729,9 @@ export default function Dashboard() {
                       {/* Button 3: Escalate for Manual Review */}
                       <button
                         onClick={() => handleDecision("Escalated")}
-                        disabled={submitting}
-                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/20 transition"
+                        disabled={submitting || !analyst}
+                        title={!analyst ? "Sign in as an analyst to enable" : undefined}
+                        className="flex-1 min-w-[140px] px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/20 transition"
                       >
                         <AlertTriangle className="w-4 h-4" />
                         Escalate for Review
