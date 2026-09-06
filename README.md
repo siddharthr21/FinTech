@@ -196,6 +196,12 @@ Respond ONLY with valid JSON, no prose, no markdown:
 ### 5. Natural Next Step (Post-Hoc Audit Roadmap)
 As a natural post-hackathon roadmap extension (Handbook Ch.9.5), the populated `analyst_decision` ground-truth records will serve as an automated feedback evaluation dataset to continuously assess whether the fusion agent's confidence scores remain statistically well-calibrated against real human analyst outcomes.
 
+The most consequential item still ahead of that: the dashboard currently has no analyst
+sign-in, and closed cases don't record *who* closed them. Layers 1 and 5 of the oversight
+model above describe scoped permissions and a post-hoc audit trail assuming an
+authenticated analyst — that gate is the next piece of hardening, once the core
+investigation flow is validated end-to-end.
+
 ---
 
 ## Technical Stack & Architecture
@@ -204,7 +210,7 @@ As a natural post-hackathon roadmap extension (Handbook Ch.9.5), the populated `
 - **Airtable:** Relational audit datastore containing 5 tables: `Customers`, `Transactions`, `Customer_History`, `Support_Tickets`, and `Investigation_Reports`.
 - **Next.js & Vercel:** Analyst-facing incident review dashboard featuring queue ranking, evidence checklists, raw audit views, and human checkpoint action buttons.
 - **Deterministic Action Guardrail:** Python module ([`pipeline/deterministic_report_generator.py`](./pipeline/deterministic_report_generator.py)) assembling audit reports without LLM generation.
-- **Standalone Pipeline Runner:** Python engine ([`pipeline/pipeline_runner.py`](./pipeline/pipeline_runner.py)) capable of running both with live LLMs and offline reference verification.
+- **Standalone Pipeline Runner:** Python engine ([`pipeline/pipeline_runner.py`](./pipeline/pipeline_runner.py)) running the agents against any OpenAI-compatible provider (`--live`) or against recorded reference outputs (`--offline`), sharing the same deterministic guardrail as the Make.com scenario.
 
 ---
 
@@ -212,31 +218,92 @@ As a natural post-hackathon roadmap extension (Handbook Ch.9.5), the populated `
 
 Derived from public financial crime benchmarks (**Sparkov**, **IEEE-CIS**, **SAML-D**, and **CFPB**):
 
-| Case ID | Type | Key Signals | Fused Score | Verdict |
+| Case ID | Type | Key Signals | Offline Reference Score | Verdict |
 |---|---|---|---|---|
 | **TX-98214** | ATO Fraud Chain | Moscow IP + $3,850 electronics + password reset 36h prior + SMS alert ticket | **94%** | **Likely Fraud** (Corroboration Bonus) |
 | **TX-98215** | Benign Travel (False Pos) | New York location + regular cardholder device + travel ticket on file | **38%** | **Likely Legitimate** (Isolated-Signal Discount) |
 | **TX-98217** | Structuring Anomaly | $990 transfer (just under $1k limit) + new account (<45d) | **68%** | **Needs Review** (Compliance Review) |
 | **TX-ERR-9999** | Schema Failure | Injected unparseable LLM output | **0%** | **Agent Error - Manual Review Required** (Ch.8.1) |
 
+The "Offline Reference Score" column is what `python pipeline/pipeline_runner.py --offline`
+always reproduces — it replays hardcoded fixture logic keyed on transaction ID, not an LLM
+call, so it's deterministic and matches this table exactly every time.
+
+**Live scores will differ, and that's expected.** Run with `--live` and a real model reasons
+over the same underlying facts instead of returning a scripted number, so its output varies
+by provider, model, and run. `data/investigation_reports.json` in this repo currently holds
+one such live run against Groq's `openai/gpt-oss-120b`:
+
+| Case ID | Offline Reference | Live Score (Groq `gpt-oss-120b`) | Verdict (Live) |
+|---|---|---|---|
+| **TX-98214** | 94% | 85% | Likely Fraud |
+| **TX-98215** | 38% | 52% | Needs Review |
+| **TX-98217** | 68% | 45% | Needs Review |
+| **TX-ERR-9999** | 0% (forced schema failure) | 0% | Agent Error - Manual Review Required |
+
+Both runs agree on the direction of every real case (TX-98214 still reads as fraud, TX-98215
+and TX-98217 still land below it) even though the exact numbers move — that agreement, not
+digit-for-digit reproduction, is what the live mode is meant to demonstrate. The forced-error
+case (`TX-ERR-9999`) stays at 0% either way, since Agent 1's output is injected as malformed
+regardless of mode.
+
 ---
 
 ## Quickstart & Verification
 
 ### 1. Run the Multi-Agent Pipeline Locally
+
+The runner has two modes. **Live** mode sends the three verbatim agent prompts to any
+OpenAI-compatible provider; **offline** mode replays recorded reference outputs so the
+benchmark table above is reproducible with no network access or API key.
+
 ```bash
-# Run all benchmark test cases
-python pipeline/pipeline_runner.py --test
+# Offline reference fixtures - no key, no network
+python pipeline/pipeline_runner.py --offline
+
+# Live agents - copy .env.example to .env and set LLM_API_KEY first
+python pipeline/pipeline_runner.py --live
+
+# Guardrail self-checks (Ch.8.1 error classification + benchmark scores)
+python pipeline/test_pipeline.py
 ```
 
+With no flag, the runner goes live when an LLM provider is configured and falls back to
+offline otherwise. Free providers (Groq, Google AI Studio, Cerebras, OpenRouter, local
+Ollama) and their `LLM_BASE_URL` / `LLM_MODEL` values are listed in
+[`.env.example`](./.env.example); switching provider is two environment variables, not a
+code change.
+
+In live mode the Ch.8.1 guardrail stops being a simulation: an unreachable provider, a
+truncated reply, or a model that emits prose instead of schema-valid JSON all produce
+`pipeline_status = "Agent Error - Manual Review Required"` with a 0% score, and the
+fusion agent is never run on a specialist output that failed validation. A `429` rate
+limit (easy to hit on a free-tier token budget once 3 agents fire per transaction) is
+retried with backoff automatically instead of escalating immediately, since it's a
+transient condition, not a schema violation.
+
 ### 2. Launch the Analyst Web Dashboard
+
+**Windows, one click:**
 ```bash
-# Install and build Next.js dashboard
+run.bat
+```
+Starts the dev server in its own window and opens `http://localhost:3000` in your
+default browser as soon as it responds.
+
+**Manual, any OS:**
+```bash
 npm install
-npm run build
-npm start
+npm run dev          # fast, hot-reload - use this while developing
+# or, for a production build:
+npm run build && npm start
 # Open http://localhost:3000
 ```
+
+Without Airtable credentials configured, the dashboard reads straight from
+[`data/investigation_reports.json`](./data/investigation_reports.json) — the same file
+`pipeline_runner.py` writes to, so running the pipeline and refreshing the dashboard is
+a complete local loop with no external services.
 
 ### 3. Deploy to Vercel
 ```bash

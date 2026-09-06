@@ -17,14 +17,32 @@ from typing import Dict, Any, List, Optional
 # Ensure project root is in python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from agents import llm
 from agents.prompts import AGENT_1_SYSTEM_PROMPT, AGENT_2_SYSTEM_PROMPT, AGENT_3_SYSTEM_PROMPT
-from pipeline.deterministic_report_generator import build_deterministic_investigation_report
+from pipeline.deterministic_report_generator import (
+    build_deterministic_investigation_report,
+    validate_agent1_schema,
+    validate_agent2_schema,
+)
 
 class FraudCopilotPipeline:
-    def __init__(self, data_path: str = "data/seed_data.json", output_path: str = "data/investigation_reports.json"):
+    def __init__(self, data_path: str = "data/seed_data.json", output_path: str = "data/investigation_reports.json", live: bool = False):
         self.data_path = data_path
         self.output_path = output_path
+        self.live = live
         self.data = self._load_data()
+
+    def _call_or_escalate(self, system_prompt: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Run one live agent turn.
+
+        A provider outage or a non-JSON reply is returned as an error object, not
+        raised: the deterministic guardrail then classifies it as a Ch.8.1
+        non-retryable failure instead of the pipeline inventing a fallback score.
+        """
+        try:
+            return llm.call_agent(system_prompt, payload)
+        except llm.AgentCallError as e:
+            return {"error": "agent_call_failed", "detail": str(e)}
         
     def _load_data(self) -> Dict[str, Any]:
         if os.path.exists(self.data_path):
@@ -55,6 +73,12 @@ class FraudCopilotPipeline:
         if force_error:
             # Simulate malformed output
             return {"error": "malformed_output", "raw": "Invalid agent output without required schema"}
+
+        if self.live:
+            return self._call_or_escalate(AGENT_1_SYSTEM_PROMPT, {
+                "target_transaction": transaction,
+                "customer_recent_transactions": recent_txs,
+            })
 
         tx_id = transaction["transaction_id"]
         amount = transaction.get("amount", 0)
@@ -145,6 +169,14 @@ class FraudCopilotPipeline:
         if force_error:
             return {"error": "malformed_output"}
 
+        if self.live:
+            return self._call_or_escalate(AGENT_2_SYSTEM_PROMPT, {
+                "target_transaction": transaction,
+                "customer_profile": customer,
+                "customer_history": history,
+                "support_tickets": tickets,
+            })
+
         cust_id = customer["customer_id"] if customer else transaction.get("customer_id", "UNKNOWN")
         findings = []
         overall_risk = 10
@@ -206,6 +238,14 @@ class FraudCopilotPipeline:
         Applies corroboration bonus if findings temporally/semantically align.
         Applies isolated-signal discount if finding has no corroboration.
         """
+        if self.live:
+            # Agent 3 sees only the two agents' JSON, never the raw records.
+            return self._call_or_escalate(AGENT_3_SYSTEM_PROMPT, {
+                "transaction_id": transaction_id,
+                "transaction_pattern_agent_output": agent1_out,
+                "customer_history_agent_output": agent2_out,
+            })
+
         findings_p = agent1_out.get("findings", [])
         findings_c = agent2_out.get("findings", [])
 
@@ -327,9 +367,11 @@ class FraudCopilotPipeline:
         # Branch B: Agent 2
         agent2_out = self.run_agent2_customer_history(transaction, customer, history, tickets, force_error=False)
 
-        # Fusion: Agent 3 (only if inputs valid, else pass to deterministic error handler)
+        # Fusion: Agent 3 only runs on inputs that passed schema validation, so a
+        # failed specialist can never be fused into a confident-looking verdict.
         agent3_out = None
-        if not force_agent_error:
+        inputs_valid = validate_agent1_schema(agent1_out) and validate_agent2_schema(agent2_out)
+        if not force_agent_error and inputs_valid:
             agent3_out = self.run_agent3_risk_scoring(tx_id, agent1_out, agent2_out)
 
         # Deterministic Report Generator (Action-Level Guardrail)
@@ -375,10 +417,27 @@ class FraudCopilotPipeline:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Fraud Copilot Investigation Pipeline")
-    parser.add_argument("--test", action="store_true", help="Run all benchmark test cases")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--live", action="store_true", help="Force live LLM agents (requires LLM_API_KEY)")
+    mode.add_argument("--offline", action="store_true", help="Force the offline reference fixtures, no network calls")
+    parser.add_argument("--test", action="store_true", help="Run all benchmark test cases (default behaviour)")
     args = parser.parse_args()
 
-    pipeline = FraudCopilotPipeline()
+    llm.load_dotenv()
+    if args.live and not llm.is_configured():
+        parser.error(
+            "--live needs an LLM provider. Set LLM_API_KEY (and optionally LLM_BASE_URL / LLM_MODEL) "
+            "in .env or the environment. See .env.example for free providers."
+        )
+    live = args.live or (not args.offline and llm.is_configured())
+
+    if live:
+        print(f"[MODE] Live agents via {os.environ.get('LLM_BASE_URL', llm.DEFAULT_BASE_URL)} "
+              f"({os.environ.get('LLM_MODEL', llm.DEFAULT_MODEL)})")
+    else:
+        print("[MODE] Offline reference fixtures (no LLM configured; run with --live after setting LLM_API_KEY)")
+
+    pipeline = FraudCopilotPipeline(live=live)
     reports = pipeline.run_all_cases()
     for r in reports:
         print(f"-> Report {r['report_id']} | TX: {r['transaction_id']} | Score: {r['confidence_score']}% | Verdict: {r['verdict']} | Status: {r['pipeline_status']}")

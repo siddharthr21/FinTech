@@ -10,15 +10,11 @@ import {
   CheckCircle2,
   XCircle,
   FileSearch,
-  ExternalLink,
   ChevronRight,
   RefreshCw,
   Eye,
-  Info,
-  Layers,
   Sparkles,
   Lock,
-  ArrowUpRight,
   Database
 } from "lucide-react";
 
@@ -31,20 +27,26 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
   const [showRawJsonModal, setShowRawJsonModal] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/reports");
+      const res = await fetch("/api/reports", { cache: "no-store" });
       const data = await res.json();
       if (data.success && data.reports) {
+        setLoadError(null);
         setReports(data.reports);
         if (data.reports.length > 0 && !selectedReportId) {
           setSelectedReportId(data.reports[0].report_id);
         }
+      } else {
+        // An empty queue and an unreachable datastore are not the same thing.
+        setLoadError(data.error || "The investigation datastore returned an unexpected response.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load reports:", e);
+      setLoadError(e?.message || "Could not reach the investigation datastore.");
     } finally {
       setLoading(false);
     }
@@ -104,6 +106,16 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="p-3.5 rounded-lg bg-rose-950/70 border border-rose-800 text-xs text-rose-200 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold block text-rose-300">Datastore unavailable &mdash; queue may be incomplete</span>
+            {loadError}
+          </div>
+        </div>
+      )}
+
       {/* Top Metric Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-4 shadow-sm">
