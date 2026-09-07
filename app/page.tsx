@@ -9,6 +9,7 @@ import WhatIfRiskSimulator from "@/components/WhatIfRiskSimulator";
 import PipelineStepper from "@/components/PipelineStepper";
 import NetworkRingGraph from "@/components/NetworkRingGraph";
 import InvestigationTimeline from "@/components/InvestigationTimeline";
+import AnalystQA from "@/components/AnalystQA";
 import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
 import { soundManager } from "@/lib/sound";
 import {
@@ -38,6 +39,7 @@ import {
   Cpu,
   Keyboard,
   Share2,
+  MessageSquare,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -56,7 +58,7 @@ export default function Dashboard() {
   const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [detailSubTab, setDetailSubTab] = useState<"findings" | "pipeline" | "simulator" | "network" | "timeline">("findings");
+  const [detailSubTab, setDetailSubTab] = useState<"findings" | "pipeline" | "simulator" | "network" | "timeline" | "qa">("findings");
   const [loadError, setLoadError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -795,11 +797,99 @@ export default function Dashboard() {
                     Forensic
                   </span>
                 </button>
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setDetailSubTab("qa");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98] ${
+                    detailSubTab === "qa"
+                      ? "bg-cyan-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#131b2c]"
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Analyst Q&amp;A</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800">
+                    Grounded
+                  </span>
+                </button>
               </div>
 
               {/* Sub-tab 1: Findings & Evidence */}
               {detailSubTab === "findings" && (
                 <>
+                {/* Competing Hypotheses Matrix (Spec §13) */}
+                {selectedReport.hypotheses && selectedReport.hypotheses.length > 0 && (
+                  <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-4 space-y-2.5 shadow-terminal-sm">
+                    <div className="flex items-center justify-between border-b border-[#1b2336] pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-400" />
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                          Competing Hypotheses Evaluation (Spec §13)
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#101726] text-slate-400 border border-[#1e273d]">
+                        Evidence-Shifted Priors
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                      {selectedReport.hypotheses.map((h, i) => {
+                        const pct = Math.round(h.score * 100);
+                        const isAto = h.name === "account_takeover";
+                        const isRing = h.name === "coordinated_fraud";
+                        const isLegit = h.name === "legitimate_transaction";
+
+                        const barColor = isAto
+                          ? "bg-rose-500"
+                          : isRing
+                          ? "bg-amber-500"
+                          : isLegit
+                          ? "bg-emerald-500"
+                          : "bg-cyan-500";
+
+                        const textColor = isAto
+                          ? "text-rose-300"
+                          : isRing
+                          ? "text-amber-300"
+                          : isLegit
+                          ? "text-emerald-300"
+                          : "text-cyan-300";
+
+                        const borderColor = isAto
+                          ? "border-rose-900/60"
+                          : isRing
+                          ? "border-amber-900/60"
+                          : isLegit
+                          ? "border-emerald-900/60"
+                          : "border-cyan-900/60";
+
+                        return (
+                          <div
+                            key={i}
+                            className={`p-2.5 rounded-lg bg-[#090d15] border ${borderColor} flex flex-col justify-between gap-1.5`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                              <span className="text-slate-300 capitalize font-medium">
+                                {h.name.replace(/_/g, " ")}
+                              </span>
+                              <span className={`font-bold tabular-nums ${textColor}`}>
+                                {pct}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-[#141b2a] rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                                style={{ width: `${Math.max(pct, 2)}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
               {/* Specialist Agents Grid: Agent 1 & Agent 2 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -942,6 +1032,33 @@ export default function Dashboard() {
                   </p>
                 </div>
 
+                {/* Split Evidence: Supporting vs Contradicting (Spec §15) */}
+                {selectedReport.contradicting_evidence && selectedReport.contradicting_evidence.length > 0 && (
+                  <div className="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-800/70 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider font-mono">
+                          Evidence Supporting Legitimacy (Spec §15 False-Positive Discrimination)
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200 border border-emerald-700">
+                        {selectedReport.contradicting_evidence.length} Mitigating Factor(s)
+                      </span>
+                    </div>
+                    <div className="space-y-1.5 pl-6">
+                      {selectedReport.contradicting_evidence.map((cev, ci) => (
+                        <div key={ci} className="text-xs text-emerald-200/90 font-sans flex items-start gap-2">
+                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-300 border border-emerald-700 flex-shrink-0 mt-0.5">
+                            {cev.evidence_id || `EV-L${ci+1}`}
+                          </span>
+                          <span>{cev.claim}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Traceable Evidence Trail Checklist */}
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-1">
@@ -950,28 +1067,44 @@ export default function Dashboard() {
                       <span>Traceable Evidence Trail (Zero Hallucination Audit)</span>
                     </span>
                     <span className="text-[11px] font-mono text-slate-500">
-                      <span className="hidden sm:inline">Every claim grounded to source data field</span>
+                      <span className="hidden sm:inline">Every claim grounded to source data field (Spec §3.2 &amp; §14)</span>
                       <span className="sm:hidden text-blue-400 font-medium">&bull; Scroll table &rarr;</span>
                     </span>
                   </div>
 
                   <div className="overflow-x-auto border border-[#1b2438] rounded-lg -mx-1 sm:mx-0">
-                    <table className="w-full text-left text-xs min-w-[520px]">
+                    <table className="w-full text-left text-xs min-w-[620px]">
                       <thead className="bg-[#090d15] text-slate-400 border-b border-[#1b2438] font-mono text-[11px]">
                         <tr>
+                          <th className="py-2.5 px-3 font-semibold">Evidence ID</th>
+                          <th className="py-2.5 px-3 font-semibold">Category</th>
                           <th className="py-2.5 px-3 font-semibold">Evidence Claim</th>
                           <th className="py-2.5 px-3 font-semibold">Source Agent</th>
-                          <th className="py-2.5 px-3 font-semibold">Source Field / Record</th>
+                          <th className="py-2.5 px-3 font-semibold">Field / Record</th>
                           <th className="py-2.5 px-3 font-semibold">Weight</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#172033] text-slate-300 font-sans">
                         {selectedReport.evidence_trail.map((ev, i) => (
                           <tr key={i} className="hover:bg-[#121929]/50 transition">
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-cyan-300 whitespace-nowrap">
+                              {ev.evidence_id || `EV-${selectedReport.transaction_id}-${(i+1).toString().padStart(3, "0")}`}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[10px] whitespace-nowrap">
+                              <span className={`px-1.5 py-0.5 rounded uppercase font-semibold ${
+                                ev.category === "observed_fact"
+                                  ? "bg-blue-950 text-blue-300 border border-blue-800"
+                                  : ev.category === "derived_signal"
+                                  ? "bg-purple-950 text-purple-300 border border-purple-800"
+                                  : "bg-amber-950 text-amber-300 border border-amber-800"
+                              }`}>
+                                {(ev.category || "fact").replace("_", " ")}
+                              </span>
+                            </td>
                             <td className="py-2.5 px-3 font-medium text-slate-200">{ev.claim}</td>
-                            <td className="py-2.5 px-3 font-mono text-[11px] text-blue-300">{ev.source_agent}</td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-blue-300 whitespace-nowrap">{ev.source_agent}</td>
                             <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400">{ev.source_field}</td>
-                            <td className="py-2 px-3">
+                            <td className="py-2 px-3 whitespace-nowrap">
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
                                   ev.weight === "high"
@@ -1025,6 +1158,16 @@ export default function Dashboard() {
               {/* Sub-tab 5: Forensic Investigation Timeline */}
               {detailSubTab === "timeline" && (
                 <InvestigationTimeline report={selectedReport} />
+              )}
+
+              {/* Sub-tab 6: Evidence-Grounded Analyst Q&A (Spec §7) */}
+              {detailSubTab === "qa" && (
+                <AnalystQA
+                  report={selectedReport}
+                  onSelectEvidence={() => {
+                    setDetailSubTab("findings");
+                  }}
+                />
               )}
 
               {/* Human Checkpoint Action Bar (Layer 3 Oversight) */}

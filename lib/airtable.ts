@@ -51,25 +51,108 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
       let customer_context = [];
 
       try {
-        evidence_trail = typeof fields.evidence_trail === "string" ? JSON.parse(fields.evidence_trail) : (fields.evidence_trail || []);
+        const parsed = typeof fields.evidence_trail === "string" ? JSON.parse(fields.evidence_trail) : (fields.evidence_trail || []);
+        evidence_trail = Array.isArray(parsed) ? parsed : [];
       } catch (e) {
         evidence_trail = [];
       }
 
       try {
         const a1 = JSON.parse(fields.agent1_output_json || "{}");
-        detected_patterns = a1.findings || [];
+        detected_patterns = Array.isArray(a1.findings) ? a1.findings : [];
       } catch (e) {}
 
       try {
         const a2 = JSON.parse(fields.agent2_output_json || "{}");
-        customer_context = a2.findings || [];
+        customer_context = Array.isArray(a2.findings) ? a2.findings : [];
       } catch (e) {}
 
       let network_findings = null;
       try {
         network_findings = typeof fields.network_findings === "string" ? JSON.parse(fields.network_findings) : (fields.network_findings || null);
       } catch (e) {}
+
+      let supporting_evidence = [];
+      try {
+        const parsed = typeof fields.supporting_evidence === "string" ? JSON.parse(fields.supporting_evidence) : (fields.supporting_evidence || []);
+        supporting_evidence = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {}
+
+      let contradicting_evidence = [];
+      try {
+        const parsed = typeof fields.contradicting_evidence === "string" ? JSON.parse(fields.contradicting_evidence) : (fields.contradicting_evidence || []);
+        contradicting_evidence = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {}
+
+      let investigation_path = [];
+      try {
+        const parsed = typeof fields.investigation_path === "string" ? JSON.parse(fields.investigation_path) : (fields.investigation_path || []);
+        investigation_path = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {}
+
+      let hypotheses = [];
+      try {
+        const parsed = typeof fields.hypotheses === "string" ? JSON.parse(fields.hypotheses) : (fields.hypotheses || []);
+        hypotheses = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {}
+
+      let completed_checks = [];
+      try {
+        const parsed = typeof fields.completed_checks === "string" ? JSON.parse(fields.completed_checks) : (fields.completed_checks || []);
+        completed_checks = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {}
+
+      // Enrich evidence_trail items to guarantee evidence_id, category, and entities (Spec §3.2, §14)
+      const txId = fields.transaction_id || "TX";
+      evidence_trail = (Array.isArray(evidence_trail) ? evidence_trail : []).map((ev: any, idx: number) => ({
+        evidence_id: ev?.evidence_id || `EV-${txId}-${(idx + 1).toString().padStart(3, "0")}`,
+        claim: ev?.claim || "",
+        source_agent: ev?.source_agent || "system_guardrail",
+        source_field: ev?.source_field || "",
+        weight: ev?.weight || "medium",
+        entities: Array.isArray(ev?.entities) ? ev.entities : [txId],
+        category: ev?.category || (ev?.source_agent === "system_guardrail" ? "derived_signal" : (ev?.claim?.toLowerCase().includes("corroboration") ? "hypothesis" : "observed_fact")),
+      }));
+
+      // If supporting/contradicting are empty, partition from evidence_trail (Spec §15)
+      if (supporting_evidence.length === 0 && contradicting_evidence.length === 0 && evidence_trail.length > 0) {
+        const contraKeywords = ["biometric", "verified", "known device", "travel notification", "zero credential churn", "legitimate", "discount"];
+        for (const ev of evidence_trail) {
+          const isContra = contraKeywords.some((kw: string) => ev.claim.toLowerCase().includes(kw));
+          if (isContra) {
+            contradicting_evidence.push(ev);
+          } else {
+            supporting_evidence.push(ev);
+          }
+        }
+      }
+
+      // If hypotheses are empty, synthesize baseline normalized hypotheses from score & verdict (Spec §13)
+      if (hypotheses.length === 0) {
+        const score = fields.confidence_score ?? 50;
+        if (score >= 80) {
+          hypotheses = [
+            { name: "account_takeover", score: 0.65 },
+            { name: "coordinated_fraud", score: 0.20 },
+            { name: "false_positive", score: 0.10 },
+            { name: "legitimate_transaction", score: 0.05 },
+          ];
+        } else if (score <= 40) {
+          hypotheses = [
+            { name: "legitimate_transaction", score: 0.60 },
+            { name: "false_positive", score: 0.25 },
+            { name: "account_takeover", score: 0.10 },
+            { name: "coordinated_fraud", score: 0.05 },
+          ];
+        } else {
+          hypotheses = [
+            { name: "account_takeover", score: 0.35 },
+            { name: "legitimate_transaction", score: 0.30 },
+            { name: "false_positive", score: 0.20 },
+            { name: "coordinated_fraud", score: 0.15 },
+          ];
+        }
+      }
 
       return {
         id: r.id,
@@ -84,6 +167,11 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         network_findings,
         fused_reasoning: fields.fused_reasoning || "",
         evidence_trail,
+        supporting_evidence,
+        contradicting_evidence,
+        investigation_path,
+        hypotheses,
+        completed_checks,
         recommended_action: fields.recommended_action || "Escalate for Manual Review",
         pipeline_status: fields.pipeline_status || "Pending Analyst Review",
         agent1_output_json: fields.agent1_output_json || "{}",

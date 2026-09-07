@@ -21,10 +21,26 @@ export interface HistoryFinding {
 }
 
 export interface EvidenceTrailItem {
+  evidence_id?: string;
   claim: string;
-  source_agent: "transaction_pattern" | "customer_history" | "system_guardrail";
+  source_agent: "transaction_pattern" | "customer_history" | "system_guardrail" | "ring_detector";
   source_field: string;
   weight: "high" | "medium" | "low";
+  entities?: string[];
+  category?: "observed_fact" | "derived_signal" | "hypothesis";
+}
+
+export interface InvestigationStep {
+  step: number;
+  agent: string;
+  check?: string;
+  trigger: string;
+  evidence_found: string[];
+}
+
+export interface Hypothesis {
+  name: string;
+  score: number;
 }
 
 export interface RingFinding {
@@ -82,6 +98,11 @@ export interface InvestigationReport {
   network_findings?: RingAnalysisResult | null;
   fused_reasoning: string;
   evidence_trail: EvidenceTrailItem[];
+  supporting_evidence?: EvidenceTrailItem[];
+  contradicting_evidence?: EvidenceTrailItem[];
+  investigation_path?: InvestigationStep[];
+  hypotheses?: Hypothesis[];
+  completed_checks?: string[];
   recommended_action: "Approve as Fraud" | "Mark False Positive" | "Escalate for Manual Review";
   pipeline_status: "Pending Analyst Review" | "Agent Error - Manual Review Required" | "Closed";
   agent1_output_json: string;

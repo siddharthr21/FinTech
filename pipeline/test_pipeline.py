@@ -180,9 +180,91 @@ def test_report_includes_ring_analysis():
     assert any("Syndicate Network Ring Detected" in e.get("claim", "") for e in rep["evidence_trail"])
 
 
+def test_investigation_path_is_evidence_driven():
+    """Spec §4.2, §4.3: Next agent is chosen because of previous evidence."""
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
+    rep = pipeline.process_transaction(tx)
+    path = rep.get("investigation_path", [])
+    assert len(path) >= 3
+    # Step 1 is always transaction history
+    assert path[0]["check"] == "transaction_history"
+    # Step 2 is triggered by evidence from Step 1
+    assert "evidence:" in path[1]["trigger"]
+    assert "detected in Step 1" in path[1]["trigger"]
+
+
+def test_hypotheses_sum_to_one():
+    """Spec §13: Hypotheses reflect competing theories and sum to 1.0."""
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    for tx in pipeline.datasource.get_flagged_transactions():
+        rep = pipeline.process_transaction(tx)
+        hyp = rep.get("hypotheses", [])
+        assert len(hyp) == 4
+        names = {h["name"] for h in hyp}
+        assert names == {"legitimate_transaction", "account_takeover", "coordinated_fraud", "false_positive"}
+        total = sum(h["score"] for h in hyp)
+        assert abs(total - 1.0) < 0.02, f"Hypotheses total {total} deviated from 1.0 for {tx['transaction_id']}"
+
+
+def test_investigation_path_recorded_in_report():
+    """Spec §4.6: Report carries ordered investigation_path with step metadata."""
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98215")
+    rep = pipeline.process_transaction(tx)
+    path = rep.get("investigation_path", [])
+    assert isinstance(path, list)
+    assert len(path) >= 2
+    for step in path:
+        assert "step" in step
+        assert "agent" in step
+        assert "trigger" in step
+        assert "evidence_found" in step
+
+
+def test_supporting_vs_contradicting_evidence():
+    """Spec §15: False-positive discrimination partitions supporting and contradicting evidence."""
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    tx_benign = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98215")
+    rep = pipeline.process_transaction(tx_benign)
+    assert "supporting_evidence" in rep
+    assert "contradicting_evidence" in rep
+    assert len(rep["contradicting_evidence"]) >= 1
+    # Check that known device / biometric is identified as contradicting evidence
+    contra_claims = " ".join(e["claim"].lower() for e in rep["contradicting_evidence"])
+    assert "biometric" in contra_claims or "verified" in contra_claims or "device" in contra_claims
+
+
+def test_evidence_ids_are_unique_and_categorized():
+    """Spec §3.2, §14: Evidence records must carry unique IDs, categories, and entities."""
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
+    rep = pipeline.process_transaction(tx)
+    trail = rep.get("evidence_trail", [])
+    assert len(trail) >= 3
+    ids = [e.get("evidence_id") for e in trail]
+    assert all(i is not None and i.startswith("EV-TX-98214-") for i in ids)
+    assert len(ids) == len(set(ids)), "Evidence IDs must be unique"
+    for e in trail:
+        assert e.get("category") in ["observed_fact", "derived_signal", "hypothesis"]
+        assert isinstance(e.get("entities"), list)
+        assert len(e["entities"]) > 0
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):
             fn()
             print(f"PASS {name}")
     print("All guardrail self-checks passed.")
+

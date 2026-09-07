@@ -193,6 +193,68 @@ export default function PipelineStepper({
           </div>
         </div>
       )}
+
+      {/* Adaptive Investigation Path (Spec §4.2–4.6) */}
+      {report?.investigation_path && report.investigation_path.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-[#172236] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+              <h5 className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider">
+                Adaptive Investigation Path (Evidence-Driven Dispatch)
+              </h5>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800">
+              {report.investigation_path.length} Sequential Steps
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-sans">
+            Following Handbook Chapter 9 &amp; Spec §4.3, the orchestrator dynamically chooses each subsequent investigation check based on evidence discovered in preceding stages:
+          </p>
+
+          <div className="space-y-2">
+            {report.investigation_path.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-3 rounded-lg bg-[#0b101c] border border-[#1c2942] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono"
+              >
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-md bg-[#131d33] border border-[#253961] text-cyan-300 flex items-center justify-center font-bold text-[11px] flex-shrink-0">
+                    0{item.step}
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-white capitalize">
+                        {item.agent.replace(/_/g, " ")}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#101726] text-slate-400 border border-[#1b253b]">
+                        {item.check || "check"}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1">
+                      <span className="text-cyan-400 font-medium">Triggered by:</span>{" "}
+                      <span className="text-slate-300">{item.trigger}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {item.evidence_found && item.evidence_found.length > 0 && (
+                  <div className="flex flex-wrap gap-1 items-center sm:justify-end">
+                    {item.evidence_found.map((ev, evIdx) => (
+                      <span
+                        key={evIdx}
+                        className="text-[10px] px-2 py-0.5 rounded bg-[#131e36] text-blue-200 border border-[#22355b]"
+                      >
+                        {ev}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
