@@ -12,7 +12,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Authentication required (Handbook Layer 1 & Layer 3 Oversight): You must be signed in as an authorized fraud analyst to execute case determinations.",
+          error: "Authentication required: You must be signed in as an authorized fraud analyst to execute case determinations.",
         },
         { status: 401 }
       );

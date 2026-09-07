@@ -72,7 +72,7 @@ export default function PipelineStepper({
       title: "Fusion Layer (A3)",
       agent: "Risk-Scoring Agent",
       latency: "62ms",
-      engine: "Multi-Agent Synthesis (Ch.3.3)",
+      engine: "Multi-Agent Synthesis Engine",
       status: "completed",
       detail: {
         formula: "0.55 * A1 + 0.45 * A2 + Corroboration(15) - Isolation(10)",
@@ -88,7 +88,7 @@ export default function PipelineStepper({
       engine: "HMAC Authenticated Analyst",
       status: status === "Closed" ? "completed" : "active",
       detail: {
-        policy: "The Agentic AI Handbook Ch.8 & 9 (Human-in-the-Loop Mandate)",
+        policy: "Deterministic Human-in-the-Loop Governance Policy",
         current_state: status,
       },
     },
@@ -209,7 +209,7 @@ export default function PipelineStepper({
             </span>
           </div>
           <p className="text-[11px] text-slate-400 font-sans">
-            Following Handbook Chapter 9 &amp; Spec §4.3, the orchestrator dynamically chooses each subsequent investigation check based on evidence discovered in preceding stages:
+            The orchestrator dynamically chooses each subsequent investigation check based on evidence discovered in preceding stages:
           </p>
 
           <div className="space-y-2">

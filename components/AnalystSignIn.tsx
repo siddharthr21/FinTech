@@ -218,7 +218,7 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
         <div className="text-center text-[11px] text-slate-500 space-y-1 font-mono">
           <div className="flex items-center justify-center gap-1.5 text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>The Agentic AI Handbook &bull; Layer 1 Scoped Permissions</span>
+            <span>Role-Based Access Control &bull; Scoped Analyst Authorization</span>
           </div>
           <p className="text-[10px] text-slate-500">
             All case approvals, false-positive dismissals, and SAR escalations are cryptographically signed.

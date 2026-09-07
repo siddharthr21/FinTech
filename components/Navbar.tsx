@@ -51,7 +51,7 @@ export default function Navbar() {
               </span>
             </div>
             <p className="hidden md:block text-[11px] text-slate-400 font-mono truncate">
-              The Agentic AI Handbook &bull; Deterministic Guardrails (Ch. 8 & 9)
+              Enterprise Fraud Intelligence &bull; Deterministic Safety Guardrails
             </p>
           </div>
         </div>

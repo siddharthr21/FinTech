@@ -114,7 +114,7 @@ export default function Dashboard() {
     if (!selectedReport) return;
     if (!analyst) {
       soundManager.playAlertBuzz();
-      setActionErrorMessage("Authentication required (Handbook Layer 1 & 3): Please sign in as an authorized analyst before executing case decisions.");
+      setActionErrorMessage("Authentication required: Please sign in as an authorized analyst before executing case decisions.");
       return;
     }
     setSubmitting(true);
@@ -510,7 +510,7 @@ export default function Dashboard() {
                         </span>
                         {isError && (
                           <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-mono uppercase">
-                            Ch.8 Error
+                            Schema Error
                           </span>
                         )}
                         {isClosed && (
@@ -687,17 +687,17 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Chapter 8.1 Error Notice Banner */}
+                {/* Safety Guardrail Error Notice Banner */}
                 {selectedReport.pipeline_status === "Agent Error - Manual Review Required" && (
                   <div className="mt-4 p-3.5 rounded-lg bg-rose-950/60 border border-rose-800/80 text-xs text-rose-200 flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold font-mono block text-rose-300">
-                        Oversight Layer 2 / Chapter 8.1 Non-Retryable Error Handled:
+                        Safety Guardrail Activated &bull; Non-Retryable Agent Error Handled:
                       </span>
-                      An agent produced a schema validation failure. Following Handbook Chapter 8.1, the pipeline
-                      explicitly halted rather than guessing a fallback score or retrying indefinitely. Human manual
-                      review is mandated before resolution.
+                      An agent produced a schema validation failure. The pipeline explicitly halted automated scoring
+                      rather than guessing a fallback score or retrying indefinitely. Human manual review is mandated
+                      before case resolution.
                     </div>
                   </div>
                 )}
@@ -1018,7 +1018,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded bg-[#10192e] text-blue-300 border border-[#1e2f57] font-mono">
-                    Ch.3.3 Orchestrator
+                    Fusion Orchestrator
                   </span>
                 </div>
 
@@ -1182,7 +1182,7 @@ export default function Dashboard() {
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         Human Checkpoint Action Bar
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0d1829] text-blue-300 border border-[#1d355c] font-normal">
-                          Oversight Layer 3 &bull; Ch.9.3
+                          Mandatory Human Gate &bull; Governance Control
                         </span>
                       </h3>
                       <p className="text-xs text-slate-400 font-mono">
@@ -1287,7 +1287,7 @@ export default function Dashboard() {
                     )}
                     <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Stopping condition satisfied (Handbook Ch.4.4 &amp; Ch.9.5): Final disposition recorded to audit datastore.</span>
+                      <span>Stopping condition satisfied: Final disposition recorded to immutable audit datastore.</span>
                     </div>
                   </div>
                 ) : (

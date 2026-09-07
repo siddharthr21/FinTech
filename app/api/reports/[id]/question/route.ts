@@ -60,7 +60,7 @@ export async function POST(
 
     if (apiKey) {
       try {
-        const systemPrompt = `You are an Analyst Assistant for a multi-agent fraud investigation system (Handbook Ch.9, Spec §7.3).
+        const systemPrompt = `You are an Analyst Assistant for an enterprise multi-agent fraud investigation system.
 Answer the analyst's question using ONLY the case evidence provided in JSON below.
 CRITICAL RULES:
 1. Do NOT invent facts or hallucinate evidence not present in the record.

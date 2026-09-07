@@ -188,7 +188,7 @@ def build_deterministic_investigation_report(
             "customer_context": agent2_output.get("findings", []) if isinstance(agent2_output, dict) else [],
             "ring_score": None,
             "network_findings": None,
-            "fused_reasoning": f"Audit Pipeline Error: {'; '.join(failure_details)}. Per Handbook Ch.8.1, this non-retryable error requires manual analyst inspection.",
+            "fused_reasoning": f"Audit Pipeline Error: {'; '.join(failure_details)}. Non-retryable error intercepted by deterministic safety guardrail; manual analyst inspection mandated.",
             "evidence_trail": [
                 {
                     "evidence_id": f"EV-{transaction_id}-001",
