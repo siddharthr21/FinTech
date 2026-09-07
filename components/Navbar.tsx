@@ -17,70 +17,72 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <header className="border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+    <header className="border-b border-[#1b2336] bg-[#0a0d14]/90 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         {/* Brand */}
-        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
-          <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 flex-shrink-0 text-xs sm:text-sm">
-            FC
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="h-9 w-9 rounded-lg bg-[#111726] border border-[#232f48] shadow-terminal-sm flex items-center justify-center font-mono font-bold text-blue-400 flex-shrink-0 text-sm">
+            <ShieldCheck className="w-5 h-5 text-blue-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-1.5 sm:gap-2 truncate">
-              <span>FraudCopilot</span>
-              <span className="hidden md:inline-block text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700 font-medium">
-                Multi-Agent
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-bold text-slate-100 tracking-tight">FraudCopilot</span>
+              <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded bg-[#10192e] text-blue-300 border border-[#1e2f57]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                RADAR LIVE
               </span>
-            </h1>
-            <p className="hidden lg:block text-xs text-slate-400 truncate">
-              Grounded in The Agentic AI Handbook (ERA Foundation / Comed Kares, 2026)
+            </div>
+            <p className="hidden md:block text-[11px] text-slate-400 font-mono truncate">
+              The Agentic AI Handbook &bull; Deterministic Guardrails (Ch. 8 & 9)
             </p>
           </div>
         </div>
 
-        {/* Architecture Badges (Desktop) */}
-        <div className="hidden xl:flex items-center space-x-2 text-xs">
-          <span className="px-2.5 py-1 rounded bg-blue-950/70 border border-blue-800/60 text-blue-300 font-mono">
-            Autonomy: L2 Human-Gated
+        {/* Architecture Telemetry Pills (Desktop) */}
+        <div className="hidden xl:flex items-center space-x-2 text-xs font-mono">
+          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+            Autonomy: <strong className="text-white">L2 Human-Gated</strong>
           </span>
-          <span className="px-2.5 py-1 rounded bg-purple-950/70 border border-purple-800/60 text-purple-300 font-mono">
-            Pattern: Multi-Agent (Ch.3.3)
+          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm">
+            Pattern: <span className="text-blue-300">Multi-Agent Synthesis</span>
           </span>
-          <span className="px-2.5 py-1 rounded bg-emerald-950/70 border border-emerald-800/60 text-emerald-300 font-mono">
-            Oversight: 5-Layer Defense
+          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm">
+            Defense: <span className="text-emerald-400">5-Layer Checkpoint</span>
           </span>
         </div>
 
         {/* Analyst Session Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {analyst ? (
             <div className="flex items-center gap-2 relative">
               {/* Analyst Profile Pill / Switcher */}
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 p-1.5 pr-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-left transition shadow-sm"
-                title="Click to switch analyst"
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg bg-[#0e1422] hover:bg-[#131b2e] border border-[#1f2a44] text-left transition shadow-terminal-sm active:scale-[0.98]"
+                title="Switch active investigator profile"
               >
                 <div
-                  className={`h-7 w-7 rounded-full bg-gradient-to-br ${analyst.badgeColor || "from-indigo-600 to-indigo-800"} flex items-center justify-center text-xs font-bold text-white shadow`}
+                  className={`h-7 w-7 rounded-md bg-[#162035] border border-[#2b3a5c] flex items-center justify-center text-xs font-mono font-bold text-blue-300 shadow-inner`}
                 >
                   {analyst.initials}
                 </div>
                 <div className="hidden sm:block">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-white">{analyst.name}</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                    <span className="text-xs font-semibold text-slate-100">{analyst.name}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#101728] text-blue-300 border border-[#202d4b]">
                       {analyst.id}
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-400 leading-none mt-0.5">{analyst.role}</div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
               </button>
 
-              {/* Direct, Unmistakable Sign Out Button */}
+              {/* Direct Sign Out Button */}
               <button
                 onClick={() => logout()}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800/80 text-xs font-medium transition flex-shrink-0"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#111624] hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-[#1e273e] hover:border-rose-800/60 text-xs font-medium transition flex-shrink-0 active:scale-[0.98]"
                 title="Sign out of current analyst session"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -89,17 +91,20 @@ export default function Navbar() {
 
               {/* Switch Analyst Dropdown */}
               {dropdownOpen && (
-                <div className="absolute right-0 top-12 w-64 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-3.5 py-2 border-b border-slate-800">
-                    <div className="text-slate-400 text-[10px] uppercase font-semibold">Active Session</div>
-                    <div className="font-bold text-white mt-0.5 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      {analyst.name}
+                <div className="absolute right-0 top-12 w-72 bg-[#0d121e] border border-[#222c42] rounded-xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3.5 py-2.5 border-b border-[#1b2336] bg-[#090d15]/50">
+                    <div className="text-slate-400 text-[10px] uppercase font-mono font-semibold tracking-wider">Active Investigator</div>
+                    <div className="font-semibold text-white mt-1 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>{analyst.name}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#141b2c] text-blue-300 border border-[#212e4c]">
+                        {analyst.id}
+                      </span>
                     </div>
                     <div className="text-slate-400 text-[11px] mt-0.5">{analyst.tier}</div>
                   </div>
 
-                  <div className="px-3.5 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <div className="px-3.5 py-1.5 text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
                     Switch Active Analyst
                   </div>
                   {availableAnalysts.map((a) => (
@@ -109,20 +114,20 @@ export default function Navbar() {
                         await login({ analystId: a.id });
                         setDropdownOpen(false);
                       }}
-                      className={`w-full px-3.5 py-2 text-left flex items-center justify-between hover:bg-slate-800/80 transition ${
-                        a.id === analyst.id ? "bg-indigo-950/40 text-indigo-200 font-semibold" : "text-slate-300"
+                      className={`w-full px-3.5 py-2 text-left flex items-center justify-between hover:bg-[#141c2e] transition ${
+                        a.id === analyst.id ? "bg-[#11192a] text-blue-200 font-semibold" : "text-slate-300"
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-md bg-[#182238] border border-[#27375a] flex items-center justify-center text-[10px] font-mono font-bold text-blue-300">
                           {a.initials}
                         </div>
                         <div>
-                          <div className="text-xs">{a.name}</div>
+                          <div className="text-xs font-medium text-slate-200">{a.name}</div>
                           <div className="text-[10px] text-slate-400">{a.role}</div>
                         </div>
                       </div>
-                      {a.id === analyst.id && <CheckCircle className="w-3.5 h-3.5 text-indigo-400" />}
+                      {a.id === analyst.id && <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
                     </button>
                   ))}
                 </div>
@@ -130,9 +135,9 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/50 border border-amber-800/60 px-2.5 py-1.5 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1.5 rounded-lg font-mono">
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Not Signed In</span>
+                <span>Unauthenticated</span>
               </span>
             </div>
           )}

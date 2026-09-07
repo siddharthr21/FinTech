@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [analystNotes, setAnalystNotes] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+  const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [showRawJsonModal, setShowRawJsonModal] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -72,11 +73,12 @@ export default function Dashboard() {
   const handleDecision = async (decision: "Approved-Fraud" | "False-Positive" | "Escalated") => {
     if (!selectedReport) return;
     if (!analyst) {
-      alert("Authentication required (Handbook Layer 1 & 3): Please sign in as an authorized analyst before executing case decisions.");
+      setActionErrorMessage("Authentication required (Handbook Layer 1 & 3): Please sign in as an authorized analyst before executing case decisions.");
       return;
     }
     setSubmitting(true);
     setActionSuccessMessage(null);
+    setActionErrorMessage(null);
 
     try {
       const res = await fetch(`/api/reports/${encodeURIComponent(selectedReport.report_id)}`, {
@@ -96,10 +98,10 @@ export default function Dashboard() {
         // Refresh reports list
         await fetchReports();
       } else {
-        alert(`Error: ${data.error || "Failed to update case"}`);
+        setActionErrorMessage(`Action failed: ${data.error || "Could not persist decision to datastore."}`);
       }
     } catch (err: any) {
-      alert(`Network error: ${err.message}`);
+      setActionErrorMessage(`Network error: ${err.message || "Failed to communicate with verification API."}`);
     } finally {
       setSubmitting(false);
     }
@@ -129,87 +131,103 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Guest Preview Mode Notice */}
       {!analyst && browseGuest && (
-        <div className="p-3.5 rounded-xl bg-amber-950/70 border border-amber-800/80 text-xs text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-terminal-sm">
           <div className="flex items-center gap-2.5">
             <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
-            <span>
-              <strong>Guest Preview Mode (Read-Only):</strong> You are exploring the queue without an analyst session. Case dispositions (Approve, False Positive, Escalate) require certified sign-in.
+            <span className="font-mono text-[11px] sm:text-xs">
+              <strong>Guest Preview Mode:</strong> Case dispositions (Approve, False Positive, Escalate) require certified investigator sign-off.
             </span>
           </div>
           <button
             onClick={() => setBrowseGuest(false)}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5 shadow text-xs flex-shrink-0"
+            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold transition flex items-center gap-1.5 shadow-sm flex-shrink-0 active:scale-[0.98]"
           >
-            <span>Sign In to Analyst Portal</span>
+            <span>Sign In to Investigator Portal</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
+      {/* Global Error Banner */}
+      {actionErrorMessage && (
+        <div className="p-3.5 rounded-xl bg-rose-950/70 border border-rose-800 text-xs text-rose-200 flex items-center justify-between gap-3 shadow-terminal-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span className="font-mono text-[11px] sm:text-xs">{actionErrorMessage}</span>
+          </div>
+          <button
+            onClick={() => setActionErrorMessage(null)}
+            className="text-rose-400 hover:text-white text-xs font-bold px-2 py-0.5"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {loadError && (
-        <div className="p-3.5 rounded-lg bg-rose-950/70 border border-rose-800 text-xs text-rose-200 flex items-start gap-3">
+        <div className="p-3.5 rounded-xl bg-rose-950/60 border border-rose-800 text-xs text-rose-200 flex items-start gap-3 shadow-terminal-sm">
           <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold block text-rose-300">Datastore unavailable &mdash; queue may be incomplete</span>
-            {loadError}
+            <span className="font-bold font-mono block text-rose-300">Datastore unavailable &mdash; queue may be incomplete</span>
+            <span className="text-[11px] font-mono">{loadError}</span>
           </div>
         </div>
       )}
 
-      {/* Top Metric Strip */}
+      {/* Top Metric Strip (Cockpit Telemetry) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-3.5 sm:p-4 shadow-terminal-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Total Cases</span>
-            <Database className="w-4 h-4 text-indigo-400" />
+            <span className="text-[10px] sm:text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400">Total Cases</span>
+            <Database className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-white">{totalCases}</span>
-            <span className="text-[11px] sm:text-xs text-slate-400">monitored</span>
+          <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-white">{totalCases}</span>
+            <span className="text-[10px] sm:text-[11px] font-mono text-slate-500">live feed</span>
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border border-rose-950/60 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="bg-[#0e131f] border border-[#2d1b24] rounded-xl p-3.5 sm:p-4 shadow-terminal-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-rose-400 truncate">Likely Fraud</span>
+            <span className="text-[10px] sm:text-[11px] font-mono font-semibold uppercase tracking-wider text-rose-400 truncate">Likely Fraud</span>
             <ShieldAlert className="w-4 h-4 text-rose-400 flex-shrink-0" />
           </div>
-          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-rose-400">{highRiskCount}</span>
-            <span className="text-[11px] sm:text-xs text-rose-400/70 truncate">corroborated</span>
+          <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-rose-400">{highRiskCount}</span>
+            <span className="text-[10px] sm:text-[11px] font-mono text-rose-400/60 truncate">&ge; 75 score</span>
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border border-amber-950/60 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="bg-[#0e131f] border border-[#2d2417] rounded-xl p-3.5 sm:p-4 shadow-terminal-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-amber-400 truncate">Pending Review</span>
+            <span className="text-[10px] sm:text-[11px] font-mono font-semibold uppercase tracking-wider text-amber-400 truncate">Pending Review</span>
             <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
           </div>
-          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-amber-400">{pendingCount}</span>
-            <span className="text-[11px] sm:text-xs text-amber-400/70 truncate">checkpoint</span>
+          <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-amber-400">{pendingCount}</span>
+            <span className="text-[10px] sm:text-[11px] font-mono text-amber-400/60 truncate">checkpoint gate</span>
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-3.5 sm:p-4 shadow-terminal-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-purple-400 truncate">Guardrails</span>
+            <span className="text-[10px] sm:text-[11px] font-mono font-semibold uppercase tracking-wider text-purple-400 truncate">Guardrails</span>
             <Lock className="w-4 h-4 text-purple-400 flex-shrink-0" />
           </div>
-          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-purple-300">{errorCount > 0 ? `${errorCount} Escalate` : "100%"}</span>
-            <span className="text-[11px] sm:text-xs text-slate-400 truncate">enforced</span>
+          <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-purple-300">{errorCount > 0 ? `${errorCount} Escalate` : "100%"}</span>
+            <span className="text-[10px] sm:text-[11px] font-mono text-slate-500 truncate">deterministic</span>
           </div>
         </div>
       </div>
 
       {/* Mobile View Switcher (Visible only on screens < lg) */}
-      <div className="lg:hidden flex items-center bg-[#111827] border border-slate-800 rounded-xl p-1 gap-1 shadow-lg">
+      <div className="lg:hidden flex items-center bg-[#090d15] border border-[#1c2438] rounded-xl p-1 gap-1 shadow-terminal-sm">
         <button
           onClick={() => setMobileTab("queue")}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition active:scale-[0.98] ${
             mobileTab === "queue"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+              ? "bg-blue-600 text-white shadow-sm"
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -218,9 +236,9 @@ export default function Dashboard() {
         </button>
         <button
           onClick={() => setMobileTab("detail")}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition active:scale-[0.98] ${
             mobileTab === "detail"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+              ? "bg-blue-600 text-white shadow-sm"
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -234,51 +252,51 @@ export default function Dashboard() {
       {/* Main Split Layout: Queue vs Case Detail */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Investigation Queue (4 cols on desktop, full width on mobile) */}
-        <div className={`lg:col-span-4 bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-xl ${mobileTab === "queue" ? "block" : "hidden lg:block"}`}>
-          <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-[#141d33]">
+        <div className={`lg:col-span-4 bg-[#0e131f] border border-[#1d2538] rounded-xl overflow-hidden shadow-terminal ${mobileTab === "queue" ? "block" : "hidden lg:block"}`}>
+          <div className="p-3.5 sm:p-4 border-b border-[#1c2438] flex items-center justify-between bg-[#090d15]">
             <div>
-              <h2 className="font-semibold text-sm text-slate-200">Investigation Queue</h2>
-              <p className="text-[11px] sm:text-xs text-slate-400">Ranked by fusion confidence score</p>
+              <h2 className="font-semibold text-sm text-slate-100">Investigation Queue</h2>
+              <p className="text-[11px] font-mono text-slate-400">Ranked by risk fusion score</p>
             </div>
             <button
               onClick={fetchReports}
               title="Refresh queue"
-              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
+              className="p-1.5 rounded-lg bg-[#141b2b] text-slate-300 hover:text-white hover:bg-[#1a2338] border border-[#222d46] transition active:scale-[0.98]"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
 
           {/* Filter Pills */}
-          <div className="px-3 py-2 bg-[#0d1424] border-b border-slate-800/80 flex gap-1.5 text-xs overflow-x-auto scrollbar-none">
+          <div className="px-3 py-2 bg-[#090d15]/80 border-b border-[#182133] flex gap-1.5 text-xs font-mono overflow-x-auto scrollbar-none">
             <button
               onClick={() => setFilterStatus("all")}
-              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
-                filterStatus === "all" ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-800"
+              className={`px-2.5 py-1 rounded font-medium transition active:scale-[0.98] flex-shrink-0 ${
+                filterStatus === "all" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:bg-[#151d2e] border border-transparent hover:border-[#1d273e]"
               }`}
             >
               All ({reports.length})
             </button>
             <button
               onClick={() => setFilterStatus("pending")}
-              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
-                filterStatus === "pending" ? "bg-amber-600 text-white" : "text-slate-400 hover:bg-slate-800"
+              className={`px-2.5 py-1 rounded font-medium transition active:scale-[0.98] flex-shrink-0 ${
+                filterStatus === "pending" ? "bg-amber-600 text-white shadow-sm" : "text-slate-400 hover:bg-[#151d2e] border border-transparent hover:border-[#1d273e]"
               }`}
             >
               Pending ({pendingCount})
             </button>
             <button
               onClick={() => setFilterStatus("error")}
-              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
-                filterStatus === "error" ? "bg-rose-700 text-white" : "text-slate-400 hover:bg-slate-800"
+              className={`px-2.5 py-1 rounded font-medium transition active:scale-[0.98] flex-shrink-0 ${
+                filterStatus === "error" ? "bg-rose-700 text-white shadow-sm" : "text-slate-400 hover:bg-[#151d2e] border border-transparent hover:border-[#1d273e]"
               }`}
             >
               Agent Error ({errorCount})
             </button>
             <button
               onClick={() => setFilterStatus("closed")}
-              className={`px-2.5 py-1 rounded-md font-medium transition flex-shrink-0 ${
-                filterStatus === "closed" ? "bg-slate-700 text-white" : "text-slate-400 hover:bg-slate-800"
+              className={`px-2.5 py-1 rounded font-medium transition active:scale-[0.98] flex-shrink-0 ${
+                filterStatus === "closed" ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:bg-[#151d2e] border border-transparent hover:border-[#1d273e]"
               }`}
             >
               Closed
@@ -286,20 +304,20 @@ export default function Dashboard() {
           </div>
 
           {/* Queue List */}
-          <div className="divide-y divide-slate-800/60 max-h-[580px] sm:max-h-[720px] overflow-y-auto">
+          <div className="divide-y divide-[#161f32] max-h-[580px] sm:max-h-[720px] overflow-y-auto">
             {filteredReports.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-xs">No cases match the selected filter.</div>
+              <div className="p-8 text-center text-slate-500 text-xs font-mono">No cases match the selected filter.</div>
             ) : (
               filteredReports.map((report) => {
                 const isSelected = selectedReport?.report_id === report.report_id;
                 const isError = report.pipeline_status === "Agent Error - Manual Review Required";
                 const isClosed = report.pipeline_status === "Closed";
 
-                let scoreColor = "text-emerald-400 bg-emerald-950/60 border-emerald-800";
+                let scoreColor = "text-emerald-400 bg-emerald-950/50 border-emerald-800/70";
                 if (report.confidence_score >= 75) {
-                  scoreColor = "text-rose-400 bg-rose-950/60 border-rose-800";
+                  scoreColor = "text-rose-400 bg-rose-950/50 border-rose-800/70";
                 } else if (report.confidence_score >= 40) {
-                  scoreColor = "text-amber-400 bg-amber-950/60 border-amber-800";
+                  scoreColor = "text-amber-400 bg-amber-950/50 border-amber-800/70";
                 }
 
                 return (
@@ -312,22 +330,25 @@ export default function Dashboard() {
                     }}
                     className={`p-3.5 cursor-pointer transition flex items-start justify-between gap-3 ${
                       isSelected
-                        ? "bg-indigo-950/40 border-l-4 border-indigo-500"
-                        : "hover:bg-slate-800/40"
+                        ? "bg-[#131b2c] border-l-4 border-blue-500 shadow-terminal-sm"
+                        : "hover:bg-[#111726]/60"
                     }`}
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-slate-200 truncate">
+                        {!isClosed && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
+                        )}
+                        <span className="text-xs font-mono font-bold text-slate-100 truncate">
                           {report.transaction_id}
                         </span>
                         {isError && (
-                          <span className="px-1.5 py-0.5 rounded bg-rose-900/80 text-rose-300 text-[10px] font-semibold tracking-wide uppercase">
+                          <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-mono uppercase">
                             Ch.8 Error
                           </span>
                         )}
                         {isClosed && (
-                          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 rounded bg-[#0b101a] border border-[#1f2c44] text-slate-300 text-[10px] font-mono flex items-center gap-1">
                             <span>{report.analyst_decision || "Closed"}</span>
                             {report.closed_by && (
                               <span className="text-emerald-400 font-normal">
@@ -338,22 +359,22 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      <p className="text-xs text-slate-400 line-clamp-1">
+                      <p className="text-xs text-slate-400 line-clamp-1 leading-snug font-sans">
                         {report.summary}
                       </p>
 
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                        <span>{report.verdict}</span>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                        <span className="text-slate-400">{report.verdict}</span>
                         <span>&bull;</span>
                         <span>{new Date(report.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold border ${scoreColor}`}>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold border tabular-nums ${scoreColor}`}>
                         {report.confidence_score}%
                       </span>
-                      <ChevronRight className="w-4 h-4 text-slate-600" />
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
                     </div>
                   </div>
                 );
@@ -365,12 +386,12 @@ export default function Dashboard() {
         {/* Right Column: Case Detail View (8 cols on desktop, full width on mobile) */}
         <div className={`lg:col-span-8 space-y-4 sm:space-y-6 ${mobileTab === "detail" ? "block" : "hidden lg:block"}`}>
           {!selectedReport ? (
-            <div className="bg-[#111827] border border-slate-800 rounded-xl p-8 sm:p-12 text-center text-slate-500">
+            <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-8 sm:p-12 text-center text-slate-500 shadow-terminal">
               <FileSearch className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-              <p className="text-xs sm:text-sm">Select a case from the queue to inspect findings and evidence.</p>
+              <p className="text-xs sm:text-sm font-mono">Select a case from the queue to inspect findings and evidence.</p>
               <button
                 onClick={() => setMobileTab("queue")}
-                className="mt-3 lg:hidden px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold inline-flex items-center gap-1.5"
+                className="mt-3 lg:hidden px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 active:scale-[0.98]"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Go to Case Queue</span>
@@ -382,7 +403,7 @@ export default function Dashboard() {
               <div className="lg:hidden flex items-center justify-between pb-1">
                 <button
                   onClick={() => setMobileTab("queue")}
-                  className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold py-1.5 px-3 rounded-lg bg-indigo-950/50 border border-indigo-800/60 transition shadow-sm"
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-mono font-semibold py-1.5 px-3 rounded-lg bg-[#0e1422] border border-[#1d2840] transition shadow-terminal-sm active:scale-[0.98]"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>&larr; Back to Case Queue</span>
@@ -393,30 +414,30 @@ export default function Dashboard() {
               </div>
 
               {/* Case Header Card */}
-              <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 sm:p-5 shadow-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800/80 pb-4">
+              <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-4 sm:p-5 shadow-terminal">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#1b2336] pb-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-base sm:text-lg font-bold text-white font-mono">{selectedReport.transaction_id}</h2>
-                      <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 truncate max-w-[200px]">
+                      <h2 className="text-base sm:text-lg font-bold text-white font-mono tracking-tight">{selectedReport.transaction_id}</h2>
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#090d15] text-slate-300 border border-[#1b253b] truncate max-w-[200px]">
                         {selectedReport.report_id}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{selectedReport.summary}</p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed font-sans">{selectedReport.summary}</p>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1a2234]">
                     <button
                       onClick={() => setShowRawJsonModal(true)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 flex items-center gap-1.5 transition flex-shrink-0"
+                      className="px-2.5 py-1.5 rounded-lg bg-[#121927] hover:bg-[#182133] text-xs font-mono text-slate-300 border border-[#1f2a40] flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98]"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-blue-400" />
                       Audit Raw JSON
                     </button>
 
                     <div className="text-right flex-shrink-0">
-                      <div className="text-[10px] sm:text-xs text-slate-400 font-medium">Confidence Score</div>
-                      <div className="text-xl sm:text-2xl font-bold font-mono text-white">
+                      <div className="text-[10px] font-mono text-slate-400 font-medium">Confidence Score</div>
+                      <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-white">
                         {selectedReport.confidence_score}%
                       </div>
                     </div>
@@ -424,31 +445,31 @@ export default function Dashboard() {
                 </div>
 
                 {/* Pipeline Status Banner */}
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400">Verdict:</span>
+                <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-slate-500">Verdict:</span>
                     <span
                       className={`font-semibold px-2.5 py-0.5 rounded-full ${
                         selectedReport.verdict === "Likely Fraud"
-                          ? "bg-rose-950 text-rose-300 border border-rose-800"
+                          ? "bg-rose-950/60 text-rose-300 border border-rose-800"
                           : selectedReport.verdict === "Needs Review"
-                          ? "bg-amber-950 text-amber-300 border border-amber-800"
-                          : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                          ? "bg-amber-950/60 text-amber-300 border border-amber-800"
+                          : "bg-emerald-950/60 text-emerald-300 border border-emerald-800"
                       }`}
                     >
                       {selectedReport.verdict}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400">Pipeline Status:</span>
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-slate-500">Pipeline Status:</span>
                     <span
-                      className={`px-2 py-0.5 rounded font-mono font-medium ${
+                      className={`px-2 py-0.5 rounded font-medium ${
                         selectedReport.pipeline_status === "Agent Error - Manual Review Required"
-                          ? "bg-rose-900/80 text-rose-200 border border-rose-700"
+                          ? "bg-rose-950 text-rose-200 border border-rose-700"
                           : selectedReport.pipeline_status === "Closed"
-                          ? "bg-slate-800 text-slate-300 border border-slate-700"
-                          : "bg-amber-900/60 text-amber-200 border border-amber-700"
+                          ? "bg-[#111726] text-slate-300 border border-[#1e2942]"
+                          : "bg-amber-950/70 text-amber-200 border border-amber-700"
                       }`}
                     >
                       {selectedReport.pipeline_status}
@@ -458,10 +479,10 @@ export default function Dashboard() {
 
                 {/* Chapter 8.1 Error Notice Banner */}
                 {selectedReport.pipeline_status === "Agent Error - Manual Review Required" && (
-                  <div className="mt-4 p-3.5 rounded-lg bg-rose-950/70 border border-rose-800 text-xs text-rose-200 flex items-start gap-3">
+                  <div className="mt-4 p-3.5 rounded-lg bg-rose-950/60 border border-rose-800/80 text-xs text-rose-200 flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold block text-rose-300">
+                      <span className="font-bold font-mono block text-rose-300">
                         Oversight Layer 2 / Chapter 8.1 Non-Retryable Error Handled:
                       </span>
                       An agent produced a schema validation failure. Following Handbook Chapter 8.1, the pipeline
@@ -475,43 +496,43 @@ export default function Dashboard() {
               {/* Specialist Agents Grid: Agent 1 & Agent 2 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Agent 1: Transaction-Pattern Findings */}
-                <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-4 space-y-3 shadow-terminal-sm">
+                  <div className="flex items-center justify-between border-b border-[#1b2336] pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded bg-blue-950 border border-blue-800 text-blue-300 flex items-center justify-center text-xs font-bold font-mono">
+                      <div className="h-6 w-6 rounded bg-[#101728] border border-[#1e2e50] text-blue-300 flex items-center justify-center text-xs font-bold font-mono">
                         A1
                       </div>
                       <div>
-                        <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                        <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
                           Transaction-Pattern Agent
                         </h3>
-                        <p className="text-[10px] text-slate-400">Velocity, Geography, Amount, Merchant</p>
+                        <p className="text-[10px] text-slate-500 font-mono">Velocity, Geography, Amount, Merchant</p>
                       </div>
                     </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-900">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#101728] text-blue-300 border border-[#1e2e50] font-mono">
                       Specialist
                     </span>
                   </div>
 
                   {selectedReport.detected_patterns.length === 0 ? (
-                    <div className="p-4 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-500 text-center">
+                    <div className="p-4 rounded-lg bg-[#090d15] border border-[#1b2438] text-xs font-mono text-slate-500 text-center">
                       No pattern anomalies detected. Baseline normal.
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {selectedReport.detected_patterns.map((item, idx) => (
-                        <div key={idx} className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1.5">
+                        <div key={idx} className="p-3 rounded-lg bg-[#090d15] border border-[#1b2438] space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-blue-300 uppercase tracking-wide">
+                            <span className="text-xs font-semibold text-blue-300 uppercase tracking-wide font-mono">
                               {item.anomaly_type}
                             </span>
-                            <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                            <span className="text-[11px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-[#121927] text-slate-300 border border-[#1e273d]">
                               Severity: {item.severity}/100
                             </span>
                           </div>
-                          <p className="text-xs text-slate-300 leading-relaxed">{item.explanation}</p>
+                          <p className="text-xs text-slate-300 leading-relaxed font-sans">{item.explanation}</p>
                           {item.evidence && (
-                            <div className="text-[11px] bg-slate-950/70 p-2 rounded border border-slate-800/80 text-slate-400 space-y-0.5">
+                            <div className="text-[11px] bg-[#070a10] p-2 rounded border border-[#172033] text-slate-400 space-y-0.5 font-mono">
                               <div>
                                 <span className="text-slate-500">Observed:</span> {item.evidence.observed_value}
                               </div>
@@ -529,43 +550,43 @@ export default function Dashboard() {
                 </div>
 
                 {/* Agent 2: Customer-History Findings */}
-                <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-4 space-y-3 shadow-terminal-sm">
+                  <div className="flex items-center justify-between border-b border-[#1b2336] pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded bg-purple-950 border border-purple-800 text-purple-300 flex items-center justify-center text-xs font-bold font-mono">
+                      <div className="h-6 w-6 rounded bg-[#1a1226] border border-[#35224e] text-purple-300 flex items-center justify-center text-xs font-bold font-mono">
                         A2
                       </div>
                       <div>
-                        <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                        <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
                           Customer-History Agent
                         </h3>
-                        <p className="text-[10px] text-slate-400">Account Maturity, Credential Churn, Tickets</p>
+                        <p className="text-[10px] text-slate-500 font-mono">Account Maturity, Credential Churn, Tickets</p>
                       </div>
                     </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-900">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1a1226] text-purple-300 border border-[#35224e] font-mono">
                       Specialist
                     </span>
                   </div>
 
                   {selectedReport.customer_context.length === 0 ? (
-                    <div className="p-4 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-500 text-center">
+                    <div className="p-4 rounded-lg bg-[#090d15] border border-[#1b2438] text-xs font-mono text-slate-500 text-center">
                       No contextual risk signals. Account history clean.
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {selectedReport.customer_context.map((item, idx) => (
-                        <div key={idx} className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1.5">
+                        <div key={idx} className="p-3 rounded-lg bg-[#090d15] border border-[#1b2438] space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide">
+                            <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide font-mono">
                               {item.signal_type.replace("_", " ")}
                             </span>
-                            <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                            <span className="text-[11px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-[#121927] text-slate-300 border border-[#1e273d]">
                               Severity: {item.severity}/100
                             </span>
                           </div>
-                          <p className="text-xs text-slate-300 leading-relaxed">{item.explanation}</p>
+                          <p className="text-xs text-slate-300 leading-relaxed font-sans">{item.explanation}</p>
                           {item.evidence && (
-                            <div className="text-[11px] bg-slate-950/70 p-2 rounded border border-slate-800/80 text-slate-400 space-y-0.5">
+                            <div className="text-[11px] bg-[#070a10] p-2 rounded border border-[#172033] text-slate-400 space-y-0.5 font-mono">
                               <div>
                                 <span className="text-slate-500">Source:</span> {item.evidence.source_table} ({item.evidence.source_record_id})
                               </div>
@@ -582,30 +603,30 @@ export default function Dashboard() {
               </div>
 
               {/* Agent 3: Fusion & Corroboration Card */}
-              <div className="bg-[#111827] border border-slate-800 rounded-xl p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-5 space-y-4 shadow-terminal">
+                <div className="flex items-center justify-between border-b border-[#1b2336] pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center text-xs font-bold font-mono">
+                    <div className="h-7 w-7 rounded bg-[#10192e] border border-[#1e2f57] text-blue-300 flex items-center justify-center text-xs font-bold font-mono">
                       A3
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         Risk-Scoring Agent (Fusion Layer)
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                       </h3>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-400 font-mono">
                         Cross-references Agent 1 & 2 outputs (Applies Corroboration Bonus / Isolated Discount)
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono">
+                  <span className="text-xs px-2 py-0.5 rounded bg-[#10192e] text-blue-300 border border-[#1e2f57] font-mono">
                     Ch.3.3 Orchestrator
                   </span>
                 </div>
 
                 {/* Fused Reasoning Box */}
-                <div className="p-3.5 rounded-lg bg-slate-900 border border-slate-800">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                <div className="p-3.5 rounded-lg bg-[#090d15] border border-[#1b2438]">
+                  <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                     Fused Multi-Agent Synthesis:
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed font-sans">
@@ -616,19 +637,19 @@ export default function Dashboard() {
                 {/* Traceable Evidence Trail Checklist */}
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                       <span>Traceable Evidence Trail (Zero Hallucination Audit)</span>
                     </span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[11px] font-mono text-slate-500">
                       <span className="hidden sm:inline">Every claim grounded to source data field</span>
-                      <span className="sm:hidden text-indigo-400 font-medium">&bull; Scroll table &rarr;</span>
+                      <span className="sm:hidden text-blue-400 font-medium">&bull; Scroll table &rarr;</span>
                     </span>
                   </div>
 
-                  <div className="overflow-x-auto border border-slate-800 rounded-lg -mx-1 sm:mx-0">
+                  <div className="overflow-x-auto border border-[#1b2438] rounded-lg -mx-1 sm:mx-0">
                     <table className="w-full text-left text-xs min-w-[520px]">
-                      <thead className="bg-[#141d33] text-slate-400 border-b border-slate-800">
+                      <thead className="bg-[#090d15] text-slate-400 border-b border-[#1b2438] font-mono text-[11px]">
                         <tr>
                           <th className="py-2.5 px-3 font-semibold">Evidence Claim</th>
                           <th className="py-2.5 px-3 font-semibold">Source Agent</th>
@@ -636,12 +657,12 @@ export default function Dashboard() {
                           <th className="py-2.5 px-3 font-semibold">Weight</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                      <tbody className="divide-y divide-[#172033] text-slate-300 font-sans">
                         {selectedReport.evidence_trail.map((ev, i) => (
-                          <tr key={i} className="hover:bg-slate-800/30">
-                            <td className="py-2 px-3 font-medium text-slate-200">{ev.claim}</td>
-                            <td className="py-2 px-3 font-mono text-[11px] text-indigo-300">{ev.source_agent}</td>
-                            <td className="py-2 px-3 font-mono text-[11px] text-slate-400">{ev.source_field}</td>
+                          <tr key={i} className="hover:bg-[#121929]/50 transition">
+                            <td className="py-2.5 px-3 font-medium text-slate-200">{ev.claim}</td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-blue-300">{ev.source_agent}</td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400">{ev.source_field}</td>
                             <td className="py-2 px-3">
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -664,59 +685,60 @@ export default function Dashboard() {
               </div>
 
               {/* Human Checkpoint Action Bar (Layer 3 Oversight) */}
-              <div className="bg-[#111827] border-2 border-indigo-900/70 rounded-xl p-5 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded bg-emerald-950 border border-emerald-700 text-emerald-300 flex items-center justify-center text-xs font-bold">
+              <div className="bg-[#0e131f] border border-[#23304c] rounded-xl p-5 shadow-terminal space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
+                <div className="flex items-center justify-between border-b border-[#1b2336] pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-6 w-6 rounded bg-[#0d1829] border border-[#1d355c] text-blue-400 flex items-center justify-center text-xs font-bold font-mono">
                       H
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         Human Checkpoint Action Bar
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-normal">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0d1829] text-blue-300 border border-[#1d355c] font-normal">
                           Oversight Layer 3 &bull; Ch.9.3
                         </span>
                       </h3>
-                      <p className="text-xs text-slate-400">
-                        Approve-before-execute gate: No case can close or execute without explicit human sign-off.
+                      <p className="text-xs text-slate-400 font-mono">
+                        Approve-before-execute gate: No case can close without explicit certified sign-off.
                       </p>
                     </div>
                   </div>
-                  <div className="text-xs text-slate-400">
-                    Recommended: <span className="font-semibold text-indigo-300">{selectedReport.recommended_action}</span>
+                  <div className="text-xs font-mono text-slate-400">
+                    Recommended: <span className="font-semibold text-blue-300">{selectedReport.recommended_action}</span>
                   </div>
                 </div>
 
                 {/* Active Analyst Signer Context */}
                 {analyst ? (
-                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-indigo-950/60 border border-indigo-800/70 text-xs">
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#090d15] border border-[#1b253b] text-xs font-mono">
                     <div
-                      className={`h-6 w-6 rounded-full bg-gradient-to-br ${analyst.badgeColor || "from-indigo-600 to-indigo-800"} flex items-center justify-center text-[10px] font-bold text-white shadow`}
+                      className={`h-6 w-6 rounded-md bg-[#162035] border border-[#2b3a5c] flex items-center justify-center text-[10px] font-bold text-blue-300 shadow`}
                     >
                       {analyst.initials}
                     </div>
                     <div className="flex-1 flex flex-wrap items-center justify-between gap-1">
                       <div>
-                        <span className="text-slate-400">Authorized Investigator:</span>{" "}
-                        <span className="font-bold text-white">{analyst.name}</span>{" "}
-                        <span className="font-mono text-[11px] text-indigo-300">({analyst.id})</span>
+                        <span className="text-slate-500">Authorized Investigator:</span>{" "}
+                        <span className="font-semibold text-white">{analyst.name}</span>{" "}
+                        <span className="text-blue-300">({analyst.id})</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900 text-indigo-200 border border-indigo-700 font-mono">
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-[#101726] text-blue-300 border border-[#202d4b]">
                         {analyst.tier}
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-amber-950/60 border border-amber-800/70 text-xs text-amber-200">
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200 font-mono">
                     <div className="flex items-center gap-2">
                       <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
                       <span>
-                        <strong>Analyst Sign-In Required:</strong> Human checkpoint decisions (Approve, False Positive, Escalate) require certified sign-off.
+                        <strong>Analyst Sign-In Required:</strong> Case dispositions require certified investigator session.
                       </span>
                     </div>
                     <button
                       onClick={() => setBrowseGuest(false)}
-                      className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5 shadow"
+                      className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition flex items-center gap-1.5 shadow-sm active:scale-[0.98]"
                     >
                       <span>Sign In as Analyst</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -725,7 +747,7 @@ export default function Dashboard() {
                 )}
 
                 {actionSuccessMessage && (
-                  <div className="p-3 rounded-lg bg-emerald-950/80 border border-emerald-700 text-xs text-emerald-200 flex items-center gap-2">
+                  <div className="p-3 rounded-lg bg-emerald-950/60 border border-emerald-700/80 text-xs font-mono text-emerald-200 flex items-center gap-2 shadow-terminal-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                     <span>{actionSuccessMessage}</span>
                   </div>
@@ -733,16 +755,16 @@ export default function Dashboard() {
 
                 {/* Analyst Decision History if already closed */}
                 {selectedReport.pipeline_status === "Closed" ? (
-                  <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="p-4 rounded-lg bg-[#090d15] border border-[#1b253b] space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
                       <div className="flex items-center gap-2">
                         <span className="text-slate-400 font-semibold">Finalized Analyst Decision:</span>
-                        <span className="px-2.5 py-0.5 rounded bg-indigo-900 text-indigo-200 font-bold font-mono">
+                        <span className="px-2.5 py-0.5 rounded bg-[#121b2d] text-blue-200 border border-[#223150] font-bold">
                           {selectedReport.analyst_decision}
                         </span>
                       </div>
                       {selectedReport.closed_by && (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800/90 px-2.5 py-1 rounded-md border border-slate-700">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-[#101726] px-2.5 py-1 rounded-md border border-[#1d2942]">
                           <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
                           <span className="text-slate-400">Closed by:</span>
                           <span className="font-bold text-white">{selectedReport.closed_by}</span>
@@ -751,26 +773,26 @@ export default function Dashboard() {
                     </div>
 
                     {selectedReport.closed_at && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
                         <Calendar className="w-3.5 h-3.5 text-slate-500" />
                         <span>Resolution Timestamp:</span>
-                        <span className="font-mono text-slate-300">
+                        <span className="text-slate-300 tabular-nums">
                           {new Date(selectedReport.closed_at).toLocaleString()}
                         </span>
                       </div>
                     )}
 
                     {selectedReport.analyst_notes && (
-                      <div className="p-2.5 rounded bg-[#090d16] border border-slate-800">
-                        <span className="text-[10px] text-slate-500 uppercase font-semibold block mb-0.5">
+                      <div className="p-2.5 rounded bg-[#06080d] border border-[#151d2d]">
+                        <span className="text-[10px] text-slate-500 font-mono uppercase font-semibold block mb-0.5">
                           Analyst Audit Notes:
                         </span>
-                        <p className="text-xs text-slate-300 italic">
+                        <p className="text-xs text-slate-300 italic font-sans">
                           &quot;{selectedReport.analyst_notes}&quot;
                         </p>
                       </div>
                     )}
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                       <span>Stopping condition satisfied (Handbook Ch.4.4 &amp; Ch.9.5): Final disposition recorded to audit datastore.</span>
                     </div>
@@ -778,28 +800,28 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Analyst Notes / Rationale (Logged with Analyst Attribution to Audit Trail)
+                      <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+                        Analyst Rationale / Verification Notes (Logged to Audit Trail)
                       </label>
                       <textarea
                         value={analystNotes}
                         onChange={(e) => setAnalystNotes(e.target.value)}
-                        placeholder="Enter justification or corroborated audit notes before taking action..."
-                        className="w-full bg-[#0a0e1a] border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        placeholder="Enter corroborated rationale before finalizing case..."
+                        className="w-full bg-[#090d15] border border-[#1c2538] rounded-lg p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
                         rows={2}
                       />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 font-mono">
                       {/* Button 1: Approve as Fraud */}
                       <button
                         onClick={() => handleDecision("Approved-Fraud")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20 transition min-h-[44px]"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition min-h-[44px] active:scale-[0.98]"
                       >
                         <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-                        <span>Approve as Fraud</span>
+                        <span>Confirm Fraud</span>
                       </button>
 
                       {/* Button 2: Mark False Positive */}
@@ -807,10 +829,10 @@ export default function Dashboard() {
                         onClick={() => handleDecision("False-Positive")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 transition min-h-[44px]"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition min-h-[44px] active:scale-[0.98]"
                       >
                         <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-                        <span>Mark False Positive</span>
+                        <span>Clear Suspicion</span>
                       </button>
 
                       {/* Button 3: Escalate for Manual Review */}
@@ -818,10 +840,10 @@ export default function Dashboard() {
                         onClick={() => handleDecision("Escalated")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/20 transition min-h-[44px]"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition min-h-[44px] active:scale-[0.98]"
                       >
                         <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                        <span>Escalate for Review</span>
+                        <span>Escalate to SAR</span>
                       </button>
                     </div>
                   </div>
@@ -835,30 +857,30 @@ export default function Dashboard() {
       {/* Raw JSON Audit Modal */}
       {showRawJsonModal && selectedReport && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4">
-          <div className="bg-[#111827] border border-slate-700 rounded-xl max-w-3xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between gap-2">
+          <div className="bg-[#0e131f] border border-[#232f48] rounded-xl max-w-3xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-3.5 sm:p-4 border-b border-[#1b2336] bg-[#090d15] flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="text-xs sm:text-sm font-bold text-white font-mono truncate">
                   Audit Raw JSON: {selectedReport.report_id}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-1">
+                <p className="text-[10px] sm:text-xs text-slate-400 font-mono line-clamp-1">
                   Action-Level Guardrail Output (Deterministic code assembly)
                 </p>
               </div>
               <button
                 onClick={() => setShowRawJsonModal(false)}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
+                className="p-1.5 rounded-lg bg-[#141b2a] text-slate-400 hover:text-white border border-[#202b40] flex-shrink-0 transition active:scale-[0.98]"
               >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-3 sm:p-4 overflow-x-auto overflow-y-auto flex-1 font-mono text-[11px] sm:text-xs text-emerald-400 bg-[#090d16]">
+            <div className="p-3 sm:p-4 overflow-x-auto overflow-y-auto flex-1 font-mono text-[11px] sm:text-xs text-emerald-400 bg-[#06080e]">
               <pre>{JSON.stringify(selectedReport, null, 2)}</pre>
             </div>
-            <div className="p-2.5 sm:p-3 border-t border-slate-800 bg-[#141d33] flex justify-end">
+            <div className="p-2.5 sm:p-3 border-t border-[#1b2336] bg-[#090d15] flex justify-end">
               <button
                 onClick={() => setShowRawJsonModal(false)}
-                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white"
+                className="px-3 py-1.5 rounded bg-[#141b2a] hover:bg-[#1a2336] text-xs font-mono text-white border border-[#202b40] transition active:scale-[0.98]"
               >
                 Close Audit View
               </button>

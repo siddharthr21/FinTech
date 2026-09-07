@@ -21,18 +21,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#0b0f19] text-slate-100 antialiased min-h-screen flex flex-col">
+      <body className="bg-[#080b11] text-slate-100 antialiased min-h-screen flex flex-col selection:bg-blue-600/30 selection:text-white">
         <AuthProvider>
-          <Navbar />
-          {/* Main Content Area */}
-          <main className="flex-1 max-w-7xl w-full mx-auto px-3 py-4 sm:p-6 lg:p-8 overflow-x-hidden">
-            {children}
-          </main>
+          <div className="terminal-ambient-glow min-h-screen flex flex-col">
+            <Navbar />
+            {/* Main Content Area */}
+            <main className="flex-1 max-w-7xl w-full mx-auto px-3 py-4 sm:px-6 lg:px-8 overflow-x-hidden">
+              {children}
+            </main>
 
-          {/* Footer */}
-          <footer className="border-t border-slate-800 py-4 text-center text-xs text-slate-500 bg-[#0a0e1a]">
-            Multi-Agent Fraud Investigation Copilot MVP &bull; Stack: Make.com + Airtable + Vercel &bull; Deterministic Action Guardrails
-          </footer>
+            {/* Terminal Footer */}
+            <footer className="border-t border-[#1a2234] py-4 text-center text-xs text-slate-500 bg-[#07090e]">
+              <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <span className="font-mono text-[11px] text-slate-500">
+                  FraudCopilot Operations Cockpit &bull; Architecture: The Agentic AI Handbook (Ch. 8 & 9)
+                </span>
+                <span className="font-mono text-[11px] text-slate-500 flex items-center gap-2">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Human Checkpoint Active &bull; Tier 1–3 Enforced
+                </span>
+              </div>
+            </footer>
+          </div>
         </AuthProvider>
       </body>
     </html>

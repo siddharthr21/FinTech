@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --background: #090d16;
+  --background: #080b11;
   --foreground: #f1f5f9;
 }
 
@@ -12,4 +12,32 @@ body {
   background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Taste Skill: Tabular numbers for financial metrics and audit trail timestamps */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Terminal custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080b11;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Subtle ambient radial light overlay */
+.terminal-ambient-glow {
+  background-image: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.04) 0%, transparent 60%);
 }
