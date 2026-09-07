@@ -256,6 +256,9 @@ export default function AnalystQA({ report, onSelectEvidence }: AnalystQAProps) 
           className="flex items-center gap-2"
         >
           <input
+            id="analyst-question"
+            name="analyst-question"
+            aria-label={`Ask Evidence Copilot about TX ${report.transaction_id}`}
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

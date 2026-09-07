@@ -88,14 +88,14 @@ export default function Dashboard() {
     fetchReports();
   }, [fetchReports]);
 
-  const selectedReport = reports.find((r) => r.report_id === selectedReportId) || reports[0];
+  const selectedReport = reports.find((r) => r.report_id === selectedReportId || (r.id && r.id === selectedReportId)) || reports[0];
 
   const selectCase = useCallback((id: string) => {
     setSelectedReportId(id);
     setActionSuccessMessage(null);
     setActionErrorMessage(null);
     setMobileTab("detail");
-    const target = reports.find((r) => r.report_id === id);
+    const target = reports.find((r) => r.report_id === id || (r.id && r.id === id));
     if (target && target.confidence_score >= 75) {
       soundManager.playRadarPing();
     } else {
@@ -201,18 +201,18 @@ export default function Dashboard() {
       if (e.key === "j" || e.key === "ArrowDown") {
         e.preventDefault();
         if (filteredReports.length === 0) return;
-        const currentIndex = filteredReports.findIndex((r) => r.report_id === selectedReportId);
+        const currentIndex = filteredReports.findIndex((r) => r.report_id === selectedReportId || (r.id && r.id === selectedReportId));
         const nextIndex = currentIndex < filteredReports.length - 1 ? currentIndex + 1 : 0;
-        selectCase(filteredReports[nextIndex].report_id);
+        selectCase(filteredReports[nextIndex].report_id || filteredReports[nextIndex].id || "");
         return;
       }
 
       if (e.key === "k" || e.key === "ArrowUp") {
         e.preventDefault();
         if (filteredReports.length === 0) return;
-        const currentIndex = filteredReports.findIndex((r) => r.report_id === selectedReportId);
+        const currentIndex = filteredReports.findIndex((r) => r.report_id === selectedReportId || (r.id && r.id === selectedReportId));
         const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredReports.length - 1;
-        selectCase(filteredReports[prevIndex].report_id);
+        selectCase(filteredReports[prevIndex].report_id || filteredReports[prevIndex].id || "");
         return;
       }
 
@@ -407,6 +407,9 @@ export default function Dashboard() {
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
               <input
                 ref={searchInputRef}
+                id="queue-search"
+                name="queue-search"
+                aria-label="Search investigation queue"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -474,8 +477,9 @@ export default function Dashboard() {
             {filteredReports.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs font-mono">No cases match the selected filter.</div>
             ) : (
-              filteredReports.map((report) => {
-                const isSelected = selectedReport?.report_id === report.report_id;
+              filteredReports.map((report, idx) => {
+                const rowKey = report.id ? `${report.id}-${report.report_id || idx}` : (report.report_id || `rep-${report.transaction_id}-${idx}`);
+                const isSelected = (selectedReport?.report_id && selectedReport.report_id === report.report_id) || (selectedReport?.id && selectedReport.id === report.id);
                 const isError = report.pipeline_status === "Agent Error - Manual Review Required";
                 const isClosed = report.pipeline_status === "Closed";
 
@@ -488,11 +492,9 @@ export default function Dashboard() {
 
                 return (
                   <div
-                    key={report.report_id}
+                    key={rowKey}
                     onClick={() => {
-                      setSelectedReportId(report.report_id);
-                      setActionSuccessMessage(null);
-                      setMobileTab("detail");
+                      selectCase(report.report_id || report.id || "");
                     }}
                     className={`p-3.5 cursor-pointer transition flex items-start justify-between gap-3 ${
                       isSelected
@@ -766,17 +768,17 @@ export default function Dashboard() {
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span>Network & Ring</span>
-                  {selectedReport.ring_score !== undefined && (
+                  {selectedReport.ring_score != null && (
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded border font-mono ${
-                        (selectedReport.ring_score || 0) >= 0.7
+                        (selectedReport.ring_score >= 70 || (selectedReport.ring_score <= 1 && selectedReport.ring_score >= 0.7))
                           ? "bg-rose-950/80 text-rose-300 border-rose-700 font-bold"
-                          : (selectedReport.ring_score || 0) >= 0.4
+                          : (selectedReport.ring_score >= 40 || (selectedReport.ring_score <= 1 && selectedReport.ring_score >= 0.4))
                           ? "bg-amber-950/80 text-amber-300 border-amber-700"
                           : "bg-[#090e18] text-slate-400 border-slate-700"
                       }`}
                     >
-                      {Math.round((selectedReport.ring_score || 0) * 100)}%
+                      {selectedReport.ring_score > 1 ? Math.round(selectedReport.ring_score) : Math.round(selectedReport.ring_score * 100)}%
                     </span>
                   )}
                 </button>
@@ -1293,10 +1295,12 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+                      <label htmlFor="analyst-notes" className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
                         Analyst Rationale / Verification Notes (Logged to Audit Trail)
                       </label>
                       <textarea
+                        id="analyst-notes"
+                        name="analyst-notes"
                         value={analystNotes}
                         onChange={(e) => setAnalystNotes(e.target.value)}
                         placeholder="Enter corroborated rationale before finalizing case (or use What-If sandbox to auto-fill)..."

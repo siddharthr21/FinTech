@@ -50,34 +50,34 @@ export default function Navbar() {
                 RADAR LIVE
               </span>
             </div>
-            <p className="hidden md:block text-[11px] text-slate-400 font-mono truncate">
+            <p className="hidden md:block text-[11px] text-slate-400 font-mono truncate max-w-[200px] lg:max-w-[320px] 2xl:max-w-none">
               Enterprise Fraud Intelligence &bull; Deterministic Safety Guardrails
             </p>
           </div>
         </div>
 
         {/* Architecture Telemetry Pills (Desktop) */}
-        <div className="hidden xl:flex items-center space-x-2 text-xs font-mono">
-          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-            Autonomy: <strong className="text-white">L2 Human-Gated</strong>
+        <div className="hidden xl:flex items-center space-x-2 text-xs font-mono flex-shrink-0">
+          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0"></span>
+            Autonomy:{" "}<strong className="text-white">L2 Human-Gated</strong>
           </span>
-          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm">
-            Pattern: <span className="text-blue-300">Multi-Agent Synthesis</span>
+          <span className="hidden 2xl:inline-flex px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm whitespace-nowrap flex-shrink-0">
+            Pattern:{" "}<span className="text-blue-300">Multi-Agent Synthesis</span>
           </span>
-          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm flex items-center gap-1.5">
-            <Activity className="w-3 h-3 text-emerald-400" />
+          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
+            <Activity className="w-3 h-3 text-emerald-400 flex-shrink-0" />
             <span className="text-slate-400">Latency:</span>
             <span className="text-emerald-300 tabular-nums">38ms</span>
           </span>
         </div>
 
         {/* Interactive Controls & Analyst Session */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
           {/* Sound Synthesizer Toggle */}
           <button
             onClick={handleToggleSound}
-            className={`p-2 rounded-lg border transition shadow-terminal-sm active:scale-[0.95] flex items-center justify-center ${
+            className={`p-2 rounded-lg border transition shadow-terminal-sm active:scale-[0.95] flex items-center justify-center flex-shrink-0 ${
               isMuted
                 ? "bg-[#0c101a] border-[#1a2336] text-slate-500 hover:text-slate-300"
                 : "bg-[#101726] border-[#1e2c48] text-blue-300 hover:bg-[#152035]"
@@ -90,10 +90,10 @@ export default function Navbar() {
           {/* Keyboard Shortcuts Trigger */}
           <button
             onClick={handleOpenShortcuts}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0e1422] hover:bg-[#141d30] border border-[#1f2a44] text-slate-300 text-xs font-mono transition shadow-terminal-sm active:scale-[0.95]"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0e1422] hover:bg-[#141d30] border border-[#1f2a44] text-slate-300 text-xs font-mono transition shadow-terminal-sm active:scale-[0.95] flex-shrink-0 whitespace-nowrap"
             title="View keyboard shortcuts (Press ? anywhere)"
           >
-            <Keyboard className="w-3.5 h-3.5 text-slate-400" />
+            <Keyboard className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             <span className="text-[11px] font-bold px-1 rounded bg-[#162035] border border-[#233252] text-blue-300">?</span>
           </button>
           {analyst ? (
@@ -101,24 +101,24 @@ export default function Navbar() {
               {/* Analyst Profile Pill / Switcher */}
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg bg-[#0e1422] hover:bg-[#131b2e] border border-[#1f2a44] text-left transition shadow-terminal-sm active:scale-[0.98]"
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg bg-[#0e1422] hover:bg-[#131b2e] border border-[#1f2a44] text-left transition shadow-terminal-sm active:scale-[0.98] flex-shrink-0"
                 title="Switch active investigator profile"
               >
                 <div
-                  className={`h-7 w-7 rounded-md bg-[#162035] border border-[#2b3a5c] flex items-center justify-center text-xs font-mono font-bold text-blue-300 shadow-inner`}
+                  className={`h-7 w-7 rounded-md bg-[#162035] border border-[#2b3a5c] flex items-center justify-center text-xs font-mono font-bold text-blue-300 shadow-inner flex-shrink-0`}
                 >
                   {analyst.initials}
                 </div>
-                <div className="hidden sm:block">
-                  <div className="flex items-center gap-1.5">
+                <div className="hidden sm:block flex-shrink-0">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
                     <span className="text-xs font-semibold text-slate-100">{analyst.name}</span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#101728] text-blue-300 border border-[#202d4b]">
                       {analyst.id}
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400 leading-none mt-0.5">{analyst.role}</div>
+                  <div className="text-[10px] text-slate-400 leading-none mt-0.5 whitespace-nowrap">{analyst.role}</div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 flex-shrink-0" />
               </button>
 
               {/* Direct Sign Out Button */}

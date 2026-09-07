@@ -364,7 +364,7 @@ export default function NetworkRingGraph({
 
             <div className="mt-4 pt-3 border-t border-[#172237] flex items-center justify-between text-[11px] font-mono text-slate-400">
               <span>Deterministic Safety Guardrail</span>
-              <span className="text-emerald-400 font-bold">&check; Pure Python Zero-LLM</span>
+              <span className="text-emerald-400 font-bold">✓ Pure Python Zero-LLM</span>
             </div>
           </div>
         </div>

@@ -44,8 +44,21 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
     }
 
     const json = await res.json();
+    const seedMap = new Map<string, InvestigationReport>();
+    if (fs.existsSync(LOCAL_STORAGE_PATH)) {
+      try {
+        const rawSeed = fs.readFileSync(LOCAL_STORAGE_PATH, "utf-8");
+        const seedReports: InvestigationReport[] = JSON.parse(rawSeed);
+        for (const sr of seedReports) {
+          if (sr.transaction_id) seedMap.set(sr.transaction_id, sr);
+        }
+      } catch (e) {}
+    }
+
     return (json.records || []).map((r: any) => {
       const fields = r.fields;
+      const txId = fields.transaction_id || "TX";
+      const seed = seedMap.get(txId);
       let evidence_trail = [];
       let detected_patterns = [];
       let customer_context = [];
@@ -71,6 +84,9 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
       try {
         network_findings = typeof fields.network_findings === "string" ? JSON.parse(fields.network_findings) : (fields.network_findings || null);
       } catch (e) {}
+      if (!network_findings && seed?.network_findings) {
+        network_findings = seed.network_findings;
+      }
 
       let supporting_evidence = [];
       try {
@@ -89,21 +105,29 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         const parsed = typeof fields.investigation_path === "string" ? JSON.parse(fields.investigation_path) : (fields.investigation_path || []);
         investigation_path = Array.isArray(parsed) ? parsed : [];
       } catch (e) {}
+      if (investigation_path.length === 0 && seed?.investigation_path?.length) {
+        investigation_path = seed.investigation_path;
+      }
 
       let hypotheses = [];
       try {
         const parsed = typeof fields.hypotheses === "string" ? JSON.parse(fields.hypotheses) : (fields.hypotheses || []);
         hypotheses = Array.isArray(parsed) ? parsed : [];
       } catch (e) {}
+      if (hypotheses.length === 0 && seed?.hypotheses?.length) {
+        hypotheses = seed.hypotheses;
+      }
 
       let completed_checks = [];
       try {
         const parsed = typeof fields.completed_checks === "string" ? JSON.parse(fields.completed_checks) : (fields.completed_checks || []);
         completed_checks = Array.isArray(parsed) ? parsed : [];
       } catch (e) {}
+      if (completed_checks.length === 0 && seed?.completed_checks?.length) {
+        completed_checks = seed.completed_checks;
+      }
 
       // Enrich evidence_trail items to guarantee evidence_id, category, and entities (Spec §3.2, §14)
-      const txId = fields.transaction_id || "TX";
       evidence_trail = (Array.isArray(evidence_trail) ? evidence_trail : []).map((ev: any, idx: number) => ({
         evidence_id: ev?.evidence_id || `EV-${txId}-${(idx + 1).toString().padStart(3, "0")}`,
         claim: ev?.claim || "",
@@ -154,16 +178,22 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         }
       }
 
+      let ring_score = fields.ring_score != null ? Number(fields.ring_score) : (seed?.ring_score ?? null);
+      if (ring_score === null && typeof fields.summary === "string") {
+        const m = fields.summary.match(/network ring score (\d+)%/i) || fields.summary.match(/ring score (\d+)%/i);
+        if (m) ring_score = parseInt(m[1], 10);
+      }
+
       return {
         id: r.id,
-        report_id: fields.report_id,
+        report_id: fields.report_id || (r.id ? `REP-${r.id}` : `REP-${fields.transaction_id || "TX"}`),
         transaction_id: fields.transaction_id,
         summary: fields.summary || `Investigation Report for TX ${fields.transaction_id}`,
         confidence_score: fields.confidence_score ?? 0,
         verdict: fields.verdict || "Needs Review",
         detected_patterns,
         customer_context,
-        ring_score: fields.ring_score ?? null,
+        ring_score,
         network_findings,
         fused_reasoning: fields.fused_reasoning || "",
         evidence_trail,
@@ -219,21 +249,27 @@ export async function updateAnalystDecision(
   const closedAt = new Date().toISOString();
 
   if (config.isConfigured) {
-    const formula = `{report_id}='${escapeFormulaValue(reportId)}'`;
-    const searchUrl = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
-    const searchRes = await fetch(searchUrl, {
-      headers: { Authorization: `Bearer ${config.pat}` },
-      cache: "no-store",
-    });
+    const isDirectRecordId = reportId.startsWith("rec");
+    const cleanRecordId = reportId.startsWith("REP-rec") ? reportId.replace("REP-", "") : (isDirectRecordId ? reportId : null);
+    let recordId = cleanRecordId;
 
-    if (!searchRes.ok) {
-      throw new Error(`Airtable lookup failed (${searchRes.status} ${searchRes.statusText}).`);
-    }
-
-    const searchJson = await searchRes.json();
-    const recordId = searchJson.records?.[0]?.id;
     if (!recordId) {
-      return false; // No such report -> route answers 404.
+      const formula = `OR({report_id}='${escapeFormulaValue(reportId)}', RECORD_ID()='${escapeFormulaValue(reportId)}')`;
+      const searchUrl = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
+      const searchRes = await fetch(searchUrl, {
+        headers: { Authorization: `Bearer ${config.pat}` },
+        cache: "no-store",
+      });
+
+      if (!searchRes.ok) {
+        throw new Error(`Airtable lookup failed (${searchRes.status} ${searchRes.statusText}).`);
+      }
+
+      const searchJson = await searchRes.json();
+      recordId = searchJson.records?.[0]?.id;
+      if (!recordId) {
+        return false; // No such report -> route answers 404.
+      }
     }
 
     const patchUrl = `https://api.airtable.com/v0/${config.baseId}/Investigation_Reports/${recordId}`;

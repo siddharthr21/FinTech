@@ -87,7 +87,7 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
           {/* Email & Password Form */}
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+              <label htmlFor="analyst-email" className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
                 Analyst Work Email
               </label>
               <div className="relative">
@@ -95,6 +95,9 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
+                  id="analyst-email"
+                  name="analyst-email"
+                  autoComplete="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -107,7 +110,7 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-mono font-medium text-slate-300">
+                <label htmlFor="analyst-password" className="block text-xs font-mono font-medium text-slate-300">
                   Passcode / Token
                 </label>
                 <span className="text-[10px] text-slate-500 font-mono">
@@ -119,6 +122,9 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
+                  id="analyst-password"
+                  name="analyst-password"
+                  autoComplete="current-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
