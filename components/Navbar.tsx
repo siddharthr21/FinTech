@@ -1,20 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   ShieldCheck,
   LogOut,
-  LogIn,
   ChevronDown,
   Lock,
-  UserCheck,
   CheckCircle,
+  Volume2,
+  VolumeX,
+  Keyboard,
+  Activity,
 } from "lucide-react";
+import { soundManager } from "@/lib/sound";
 
 export default function Navbar() {
   const { analyst, availableAnalysts, login, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    setIsMuted(soundManager.isMuted());
+  }, []);
+
+  const handleToggleSound = () => {
+    const muted = soundManager.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const handleOpenShortcuts = () => {
+    soundManager.playClick();
+    window.dispatchEvent(new CustomEvent("toggle-shortcuts-modal"));
+  };
 
   return (
     <header className="border-b border-[#1b2336] bg-[#0a0d14]/90 backdrop-blur-md sticky top-0 z-50">
@@ -47,13 +65,37 @@ export default function Navbar() {
           <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm">
             Pattern: <span className="text-blue-300">Multi-Agent Synthesis</span>
           </span>
-          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm">
-            Defense: <span className="text-emerald-400">5-Layer Checkpoint</span>
+          <span className="px-2.5 py-1 rounded bg-[#0d1322] border border-[#1b2742] text-slate-300 shadow-sm flex items-center gap-1.5">
+            <Activity className="w-3 h-3 text-emerald-400" />
+            <span className="text-slate-400">Latency:</span>
+            <span className="text-emerald-300 tabular-nums">38ms</span>
           </span>
         </div>
 
-        {/* Analyst Session Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Interactive Controls & Analyst Session */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Sound Synthesizer Toggle */}
+          <button
+            onClick={handleToggleSound}
+            className={`p-2 rounded-lg border transition shadow-terminal-sm active:scale-[0.95] flex items-center justify-center ${
+              isMuted
+                ? "bg-[#0c101a] border-[#1a2336] text-slate-500 hover:text-slate-300"
+                : "bg-[#101726] border-[#1e2c48] text-blue-300 hover:bg-[#152035]"
+            }`}
+            title={isMuted ? "Unmute terminal sound effects" : "Mute terminal sound effects"}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+
+          {/* Keyboard Shortcuts Trigger */}
+          <button
+            onClick={handleOpenShortcuts}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0e1422] hover:bg-[#141d30] border border-[#1f2a44] text-slate-300 text-xs font-mono transition shadow-terminal-sm active:scale-[0.95]"
+            title="View keyboard shortcuts (Press ? anywhere)"
+          >
+            <Keyboard className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[11px] font-bold px-1 rounded bg-[#162035] border border-[#233252] text-blue-300">?</span>
+          </button>
           {analyst ? (
             <div className="flex items-center gap-2 relative">
               {/* Analyst Profile Pill / Switcher */}
