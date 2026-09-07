@@ -6,6 +6,8 @@
 [![Airtable](https://img.shields.io/badge/Airtable-Audit_Datastore-fcb400?style=flat&logo=airtable)](https://airtable.com/)
 [![Autonomy](https://img.shields.io/badge/Autonomy-L2_Human--Gated-emerald?style=flat)](https://github.com/siddharthr21/FinTech)
 [![Oversight](https://img.shields.io/badge/Oversight-5--Layer_Defense-blue?style=flat)](https://github.com/siddharthr21/FinTech)
+[![Web Audio API](https://img.shields.io/badge/Audio-Web_Audio_API-cyan?style=flat)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+[![Ring Detection](https://img.shields.io/badge/Syndicate-Ring_Graph_Cluster-rose?style=flat)](https://github.com/siddharthr21/FinTech)
 
 > **Built with "The Agentic AI Handbook" Design Discipline (Comed Kares Innovation Hub / ERA Foundation, 2026)**  
 > *Autonomy Level: L2 (Tool-Using Agent, Human-Gated) | Pattern: Multi-Agent Orchestration (Ch.3.3) | Oversight: 5-Layer Defense-in-Depth (Ch.9)*
@@ -202,11 +204,79 @@ The platform features an authenticated analyst gateway and immutable decision at
 
 ---
 
+### 6. Interactive Operations Terminal (Palantir Foundry / Stripe Radar Grade)
+The frontend dashboard provides a high-density, keyboard-driven investigation terminal:
+- **Zero-Asset Web Audio API Synthesizer ([`lib/sound.ts`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/lib/sound.ts)):**
+  - Synthesizes tactile mechanical clicks, high-risk radar pings (1100Hz), major-triad success chimes (C5-E5-G5), and error buzzers on the fly with zero external MP3 assets. Includes global mute control and persistent `localStorage` memory.
+- **Animated SVG Radial Risk Speedometer ([`components/RiskSpeedometer.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/RiskSpeedometer.tsx)):**
+  - Semicircular SVG dial with gradient coloration (Emerald $0\text{–}39\%$ $\rightarrow$ Amber $40\text{–}74\%$ $\rightarrow$ Rose $75\text{–}100\%$), real-time rotating needle, glowing pivot, and tabular percentage display.
+- **Interactive What-If Risk Simulator Sandbox ([`components/WhatIfRiskSimulator.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/WhatIfRiskSimulator.tsx)):**
+  - Live sandbox sub-tab in the case view. Analysts can drag Agent 1 and Agent 2 severity sliders ($0\text{–}100$) and toggle Corroboration (+15%) / Isolation (-10%) to inspect recalculations and score deltas against ground truth.
+  - **Apply Hypothesis to Notes** button automatically formats and injects the simulation parameters into the analyst disposition audit box.
+- **5-Stage Multi-Agent Pipeline Stepper ([`components/PipelineStepper.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/PipelineStepper.tsx)):**
+  - Real-time visualization of the end-to-end pipeline: *Webhook Ingestion $\rightarrow$ A1 Pattern $\rightarrow$ A2 History $\rightarrow$ A3 Fusion $\rightarrow$ L3 Human Gate*.
+  - Expandable execution telemetry showing model engines, rules evaluated, and execution latencies ($14\text{ms}$–$210\text{ms}$).
+- **Terminal Keyboard Shortcuts HUD ([`components/KeyboardShortcutsModal.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/KeyboardShortcutsModal.tsx)):**
+  - Full keyboard-driven navigation:
+    * <kbd>J</kbd> / <kbd>↓</kbd>: Next case in queue
+    * <kbd>K</kbd> / <kbd>↑</kbd>: Previous case in queue
+    * <kbd>1</kbd>: Confirm Fraud
+    * <kbd>2</kbd>: Clear Suspicion (False Positive)
+    * <kbd>3</kbd>: Escalate to SAR
+    * <kbd>/</kbd> or <kbd>F</kbd>: Focus instant search bar
+    * <kbd>?</kbd>: Open keyboard shortcuts HUD cheat sheet modal
+    * <kbd>Esc</kbd>: Close modals and blur inputs
+- **Instant Search & 1-Click Clipboard Copying:**
+  - Real-time search across transaction IDs, report IDs, merchant names, and verdicts with clear button and 1-click **Copy TX** / **Copy ID** micro-pill feedback.
+
+---
+
+### 7. Fraud Ring Detector & Entity Network Graph
+- **Graph Clustering Engine ([`pipeline/ring_detector.py`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/pipeline/ring_detector.py)):**
+  - Automatically identifies coordinated financial crime syndicates and money-mule networks by computing connected components across shared entities:
+    - Shared Device IDs
+    - Shared IP Subnets
+    - Shared Shipping / Physical Addresses
+    - Shared Recipient Beneficiary Accounts
+- **Interactive Ring Visualization ([`components/NetworkRingGraph.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/NetworkRingGraph.tsx)):**
+  - Renders interactive node-link diagrams illustrating syndicate topology, hub entities, connected transaction clusters, and ring risk scores.
+
+---
+
+### 8. Interactive Investigation Timeline
+- **Chronological Event Reconstruction ([`components/InvestigationTimeline.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/InvestigationTimeline.tsx)):**
+  - Visualizes the full forensic timeline of an account:
+    - Pre-attack reconnaissance events
+    - Credential churn (password resets, biometric overrides, device additions)
+    - High-velocity transactional bursts
+    - Customer support tickets and unauthorized access alerts
+  - Includes type filters (All, Transactions, Credentials, Support, Network) and severity badging.
+
+---
+
+### 9. Evidence-Grounded Analyst Q&A Copilot
+- **Interactive Evidence Copilot ([`components/AnalystQA.tsx`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/components/AnalystQA.tsx), [`app/api/reports/[id]/question/route.ts`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/app/api/reports/[id]/question/route.ts)):**
+  - In-app analyst chat interface for asking complex forensic questions about the case.
+  - Generates responses strictly grounded in the ingested evidence trail, with clickable evidence citations, confidence scores, and strict anti-hallucination guardrails.
+
+---
+
+### 10. Multi-Hypothesis & State Tracking Engine
+- **Bayesian Hypothesis Evaluation ([`pipeline/investigation_state.py`](file:///c:/Users/Siddharth%20R/FinTech/FinTech/pipeline/investigation_state.py)):**
+  - Tracks competing forensic hypotheses simultaneously:
+    - `H1`: Account Takeover (ATO)
+    - `H2`: Authorized Push Payment (APP) Scam
+    - `H3`: Synthetic Identity Theft
+    - `H4`: First-Party Fraud / Friendly Fraud
+  - Dynamically computes probability distributions ensuring all hypotheses sum to $1.0$, accompanied by supporting vs. contradicting evidence tallies.
+
+---
+
 ## Technical Stack & Architecture
 
 - **Make.com:** Visual multi-agent workflow orchestration with parallel router branches and deterministic JSON assembly ([`make_scenario/make_blueprint.json`](./make_scenario/make_blueprint.json)).
 - **Airtable:** Relational audit datastore containing 5 tables: `Customers`, `Transactions`, `Customer_History`, `Support_Tickets`, and `Investigation_Reports`.
-- **Next.js & Vercel:** Analyst-facing incident review dashboard featuring queue ranking, evidence checklists, raw audit views, and human checkpoint action buttons.
+- **Next.js 14 & Tailwind CSS:** Analyst-facing incident review dashboard featuring queue ranking, evidence checklists, raw audit views, and human checkpoint action buttons.
 - **Deterministic Action Guardrail:** Python module ([`pipeline/deterministic_report_generator.py`](./pipeline/deterministic_report_generator.py)) assembling audit reports without LLM generation.
 - **Standalone Pipeline Runner:** Python engine ([`pipeline/pipeline_runner.py`](./pipeline/pipeline_runner.py)) running the agents against any OpenAI-compatible provider (`--live`) or against recorded reference outputs (`--offline`), sharing the same deterministic guardrail as the Make.com scenario.
 - **Data Access Layer:** [`pipeline/datasource.py`](./pipeline/datasource.py) — a `DataSource`/`ReportSink` interface with local-JSON and live-Airtable implementations of each, selectable via `--source`. This is the seam a real deployment swaps for a bank's core banking system; see [Deployment Mapping](#deployment-mapping-from-prototype-to-bank-production) below.
@@ -362,7 +432,36 @@ Without Airtable credentials configured, the dashboard reads straight from
 `pipeline_runner.py` writes to, so running the pipeline and refreshing the dashboard is
 a complete local loop with no external services.
 
-### 3. Deploy to Vercel
+### 3. Run the Comprehensive Guardrail Test Suite
+```bash
+# Executes 12/12 automated test suites covering guardrails, schemas, ring detection, and Bayesian hypothesis distribution:
+python pipeline/test_pipeline.py
+```
+Expected output:
+```text
+PASS test_benchmark_cases_match_documented_scores
+PASS test_evidence_ids_are_unique_and_categorized
+PASS test_happy_path_is_pending_review
+PASS test_hypotheses_sum_to_one
+PASS test_investigation_path_is_evidence_driven
+PASS test_investigation_path_recorded_in_report
+PASS test_malformed_agent_output_escalates
+PASS test_report_includes_ring_analysis
+PASS test_reports_carry_provenance
+PASS test_ring_detector_discrimination
+PASS test_ring_schema_validation
+PASS test_supporting_vs_contradicting_evidence
+All guardrail self-checks passed.
+```
+
+### 4. Connect Make.com Cloud Automation
+Follow the step-by-step instructions in [`make_scenario/MAKE_SETUP_GUIDE.md`](./make_scenario/MAKE_SETUP_GUIDE.md) to import [`make_scenario/make_blueprint.json`](./make_scenario/make_blueprint.json) into your Make.com account:
+1. **Import**: Create a scenario in Make.com, click `...` $\rightarrow$ **Import Blueprint**, and select `make_blueprint.json`.
+2. **Airtable Trigger**: Connect using your Airtable Personal Access Token (PAT), select base `app9jv5jsY2fw9fp6`, table `Transactions`, and trigger field `Created`.
+3. **Specialist AI Models**: Connect Anthropic Claude or OpenAI for the Pattern Specialist (A1), History Specialist (A2), and Fusion Layer (A3).
+4. **Execution**: Click **Run once** — Make.com watches flagged transactions, executes the parallel specialist branches, computes the corroborated fusion score, and creates the report record directly in Airtable's `Investigation_Reports` table for real-time human analyst review.
+
+### 5. Deploy to Vercel
 ```bash
 # Set your Airtable environment variables in Vercel or locally in .env:
 # AIRTABLE_API_KEY=patXXXXXXXXXXXX
@@ -370,6 +469,3 @@ a complete local loop with no external services.
 
 vercel --prod
 ```
-
-### 4. Import Make.com Blueprint
-Follow the step-by-step instructions in [`make_scenario/MAKE_SETUP_GUIDE.md`](./make_scenario/MAKE_SETUP_GUIDE.md) to import [`make_scenario/make_blueprint.json`](./make_scenario/make_blueprint.json) into your Make.com account.
