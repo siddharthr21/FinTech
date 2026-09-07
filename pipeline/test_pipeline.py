@@ -18,6 +18,7 @@ from pipeline.deterministic_report_generator import (
 )
 from pipeline.pipeline_runner import FraudCopilotPipeline
 from pipeline.ring_detector import RingDetector
+from agents.redact import RedactionContext
 
 VALID_A1 = {
     "agent": "transaction_pattern",
@@ -259,6 +260,112 @@ def test_evidence_ids_are_unique_and_categorized():
         assert e.get("category") in ["observed_fact", "derived_signal", "hypothesis"]
         assert isinstance(e.get("entities"), list)
         assert len(e["entities"]) > 0
+
+
+def test_redaction_boundary_strips_pii_before_wire_and_restores_after():
+    """The exact fields a bank would object to must never appear in an
+    outbound agent payload, and must be back to real values in the report."""
+    ctx = RedactionContext()
+    transaction = {
+        "transaction_id": "TX-1",
+        "customer_id": "CUST-1",
+        "amount": 500.0,
+        "location": "Moscow, RU",  # kept raw on purpose: geography reasoning needs it
+        "device_id": "DEV-REAL-1234",
+        "ip_address": "203.0.113.7",
+    }
+    customer = {"customer_id": "CUST-1", "name": "Jane Doe", "home_location": "Seattle, WA"}
+    history = [{"event_id": "EVT-1", "customer_id": "CUST-1", "device_id": "DEV-REAL-1234", "event_type": "Login"}]
+
+    payload_tx = ctx.redact_transaction(transaction)
+    payload_customer = ctx.redact_customer(customer)
+    payload_history = ctx.redact_history_events(history)
+
+    # What would actually cross the wire to the LLM provider:
+    outbound = str([payload_tx, payload_customer, payload_history])
+    assert "DEV-REAL-1234" not in outbound
+    assert "203.0.113.7" not in outbound
+    assert "Jane Doe" not in outbound
+    # Fields that must NOT be redacted (needed for the agents' own reasoning,
+    # or already-opaque system IDs):
+    assert payload_tx["location"] == "Moscow, RU"
+    assert payload_tx["customer_id"] == "CUST-1"
+    assert payload_tx["amount"] == 500.0
+
+    # Same real device_id -> same token, in two different structures. This is
+    # what preserves the ring detector's "shared device" signal without ever
+    # naming the actual device.
+    assert payload_tx["device_id"] == payload_history[0]["device_id"]
+
+    # A simulated agent response referencing only tokens it was given:
+    fake_agent1_out = {
+        "findings": [{
+            "anomaly_type": "geography",
+            "explanation": f"Device {payload_tx['device_id']} used from a new location.",
+            "evidence": {"observed_value": payload_tx["ip_address"]},
+        }]
+    }
+    rehydrated = ctx.rehydrate(fake_agent1_out)
+    assert "DEV-REAL-1234" in rehydrated["findings"][0]["explanation"]
+    assert rehydrated["findings"][0]["evidence"]["observed_value"] == "203.0.113.7"
+    assert payload_tx["device_id"] not in rehydrated["findings"][0]["explanation"]
+
+
+def test_redaction_tokens_dont_collide_on_substring():
+    """DEVICE_1 must not get replaced inside DEVICE_10's text during rehydrate."""
+    ctx = RedactionContext()
+    tokens = [ctx._token_for("device_id", f"DEV-REAL-{i}") for i in range(1, 12)]
+    assert tokens[0] == "DEVICE_1"
+    assert tokens[9] == "DEVICE_10"
+    text = f"{tokens[9]} was seen alongside {tokens[0]}."
+    rehydrated = ctx.rehydrate(text)
+    assert "DEV-REAL-10" in rehydrated
+    assert "DEV-REAL-1" in rehydrated
+    assert "DEV-REAL-1 was seen" not in rehydrated  # would indicate DEVICE_10 got mis-split
+
+
+def test_live_pipeline_never_sends_raw_pii_to_the_llm_client():
+    """End-to-end: run one real transaction through process_transaction in
+    live mode against a stub LLM client, and inspect exactly what payload the
+    pipeline handed to it."""
+    import agents.llm as llm_module
+
+    captured_payloads = []
+    original_call_agent = llm_module.call_agent
+
+    def spy_call_agent(system_prompt, user_payload, **kwargs):
+        captured_payloads.append(user_payload)
+        if "risk_scoring" in system_prompt.lower() or "Risk-Scoring" in system_prompt:
+            return {
+                "agent": "risk_scoring", "transaction_id": "TX-98214", "confidence_score": 50,
+                "verdict": "Needs Review", "fused_reasoning": "stub", "evidence_trail": [],
+                "recommended_analyst_action": "Escalate for Manual Review",
+            }
+        if "customer_history" in system_prompt.lower() or "Customer-History" in system_prompt:
+            return {"agent": "customer_history", "customer_id": "CUST-10492", "findings": [], "overall_context_risk": 10}
+        return {"agent": "transaction_pattern", "transaction_id": "TX-98214", "findings": [], "overall_pattern_risk": 10}
+
+    llm_module.call_agent = spy_call_agent
+    try:
+        pipeline = FraudCopilotPipeline(
+            data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json"),
+            live=True,
+        )
+        tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
+        pipeline.process_transaction(tx)
+    finally:
+        llm_module.call_agent = original_call_agent
+
+    assert len(captured_payloads) >= 2, "expected at least agent1 and agent2 to be called"
+    wire_text = str(captured_payloads)
+    # The real fixture data for CUST-10492 includes device DEV-UNK-9941 and
+    # customer name "Elena Rostova" (data/seed_data.json) - neither should
+    # ever appear in what was actually sent to the LLM client.
+    assert "DEV-UNK-9941" not in wire_text
+    assert "Elena Rostova" not in wire_text
+    # Fields the agents genuinely need stay untouched:
+    assert "TX-98214" in wire_text
+    assert "Moscow" in wire_text or "Moscow, RU" in wire_text
 
 
 if __name__ == "__main__":

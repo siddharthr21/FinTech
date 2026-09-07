@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvestigationReports } from "@/lib/airtable";
+import { RedactionContext } from "@/lib/redact";
 
 export async function POST(
   req: NextRequest,
@@ -60,6 +61,23 @@ export async function POST(
 
     if (apiKey) {
       try {
+        // network_findings.entities carries real device_id/ip_address values from
+        // the deterministic Ring Detector (which never touches an LLM in Python,
+        // so those values were never tokenized). This is a separate LLM call from
+        // the Python pipeline's - see lib/redact.ts - so it needs its own boundary:
+        // scrub every known real device/IP (including occurrences buried in free
+        // text like a finding's `explanation`) before this leaves the server, then
+        // rehydrate the model's answer back to real values before showing it to
+        // the analyst.
+        const redactionCtx = new RedactionContext();
+        for (const device of report.network_findings?.entities?.devices || []) {
+          redactionCtx.registerDevice(device);
+        }
+        for (const ip of report.network_findings?.entities?.ips || []) {
+          redactionCtx.registerIp(ip);
+        }
+        const safeContextDoc = redactionCtx.scrub(contextDoc);
+
         const systemPrompt = `You are an Analyst Assistant for an enterprise multi-agent fraud investigation system.
 Answer the analyst's question using ONLY the case evidence provided in JSON below.
 CRITICAL RULES:
@@ -70,7 +88,7 @@ CRITICAL RULES:
 5. Format your response cleanly with markdown bullet points and clear sections.`;
 
         const userPrompt = `CASE EVIDENCE:
-${JSON.stringify(contextDoc, null, 2)}
+${JSON.stringify(safeContextDoc, null, 2)}
 
 ANALYST QUESTION:
 ${question}
@@ -96,7 +114,11 @@ Provide an evidence-grounded response citing specific EV-* IDs:`;
 
         if (response.ok) {
           const resJson = await response.json();
-          const answer = resJson.choices?.[0]?.message?.content?.trim() || "";
+          const rawAnswer = resJson.choices?.[0]?.message?.content?.trim() || "";
+          // Restore real device/IP values in the model's own answer text - the
+          // analyst should never see a DEVICE_1/IP_1 token, only what actually
+          // left the server was ever redacted.
+          const answer = redactionCtx.rehydrate(rawAnswer);
 
           // Extract cited evidence IDs from the LLM answer
           const citedIds = allEvidenceIds.filter((id) => answer.includes(id));

@@ -1,6 +1,6 @@
 [
   {
-    "report_id": "REP-TX-98214-1788771051",
+    "report_id": "REP-TX-98214-1788772144",
     "transaction_id": "TX-98214",
     "summary": "Copilot assessed TX TX-98214 as 'Likely Fraud' (Confidence: 94%). Detected 3 pattern anomalies, 2 contextual history signals.",
     "confidence_score": 94,
@@ -209,10 +209,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:50:51.782445+00:00"
+    "created_at": "2026-09-07T09:09:04.980758+00:00"
   },
   {
-    "report_id": "REP-TX-98215-1788771054",
+    "report_id": "REP-TX-98215-1788772147",
     "transaction_id": "TX-98215",
     "summary": "Copilot assessed TX TX-98215 as 'Likely Legitimate' (Confidence: 38%). Detected 1 pattern anomaly, 0 contextual history signals.",
     "confidence_score": 38,
@@ -344,10 +344,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:50:54.756438+00:00"
+    "created_at": "2026-09-07T09:09:07.224850+00:00"
   },
   {
-    "report_id": "REP-TX-98217-1788771056",
+    "report_id": "REP-TX-98217-1788772148",
     "transaction_id": "TX-98217",
     "summary": "Copilot assessed TX TX-98217 as 'Needs Review' (Confidence: 68%). Detected 1 pattern anomaly, 1 contextual history signal.",
     "confidence_score": 68,
@@ -502,10 +502,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:50:56.218921+00:00"
+    "created_at": "2026-09-07T09:09:08.720298+00:00"
   },
   {
-    "report_id": "REP-TX-70001-1788771057",
+    "report_id": "REP-TX-70001-1788772150",
     "transaction_id": "TX-70001",
     "summary": "Copilot assessed TX TX-70001 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
     "confidence_score": 92,
@@ -559,10 +559,10 @@
           "evidence": {
             "shared_devices": {
               "DEV-RING-4417": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70114"
               ]
             },
             "max_overlap_count": 4
@@ -579,8 +579,8 @@
           "evidence": {
             "shared_ips": {
               "103.21.244.18": [
-                "CUST-70114",
-                "CUST-70115"
+                "CUST-70115",
+                "CUST-70114"
               ],
               "45.132.192.7": [
                 "CUST-70113",
@@ -626,10 +626,10 @@
           "evidence": {
             "mule_accounts": {
               "ACC-MULE-9011": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70114"
               ]
             },
             "max_degree": 4
@@ -640,27 +640,27 @@
           "severity": 90,
           "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
           "entities": [
-            "CUST-70114",
-            "CUST-70113",
             "CUST-70115",
-            "CUST-70112"
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70114"
           ],
           "evidence": {
             "synchronized_accounts": [
-              "CUST-70114",
-              "CUST-70113",
               "CUST-70115",
-              "CUST-70112"
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70114"
             ]
           }
         }
       ],
       "entities": {
         "customers": [
-          "CUST-70114",
-          "CUST-70113",
           "CUST-70115",
-          "CUST-70112"
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70114"
         ],
         "devices": [
           "DEV-RING-4417"
@@ -676,8 +676,8 @@
       "graph": {
         "nodes": [
           {
-            "id": "CUST-70114",
-            "label": "Ananya Roy",
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
             "type": "customer",
             "isFlagged": true
           },
@@ -688,14 +688,14 @@
             "isFlagged": true
           },
           {
-            "id": "CUST-70115",
-            "label": "Karan Malhotra",
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
             "type": "customer",
             "isFlagged": true
           },
           {
-            "id": "CUST-70112",
-            "label": "Vikram Sethi",
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
             "type": "customer",
             "isFlagged": true
           },
@@ -726,7 +726,7 @@
         ],
         "edges": [
           {
-            "source": "CUST-70114",
+            "source": "CUST-70115",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -736,12 +736,12 @@
             "relationship": "USED_DEVICE"
           },
           {
-            "source": "CUST-70115",
+            "source": "CUST-70112",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
           {
-            "source": "CUST-70112",
+            "source": "CUST-70114",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -756,17 +756,17 @@
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
-            "source": "CUST-70114",
-            "target": "103.21.244.18",
-            "relationship": "ROUTED_THROUGH_IP"
-          },
-          {
             "source": "CUST-70115",
             "target": "103.21.244.18",
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
             "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
@@ -776,12 +776,12 @@
             "relationship": "TRANSFERRED_TO"
           },
           {
-            "source": "CUST-70115",
+            "source": "CUST-70112",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
           {
-            "source": "CUST-70112",
+            "source": "CUST-70114",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           }
@@ -935,10 +935,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:50:57.765099+00:00"
+    "created_at": "2026-09-07T09:09:10.424493+00:00"
   },
   {
-    "report_id": "REP-TX-70002-1788771059",
+    "report_id": "REP-TX-70002-1788772151",
     "transaction_id": "TX-70002",
     "summary": "Copilot assessed TX TX-70002 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
     "confidence_score": 92,
@@ -992,10 +992,10 @@
           "evidence": {
             "shared_devices": {
               "DEV-RING-4417": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70114"
               ]
             },
             "max_overlap_count": 4
@@ -1012,8 +1012,8 @@
           "evidence": {
             "shared_ips": {
               "103.21.244.18": [
-                "CUST-70114",
-                "CUST-70115"
+                "CUST-70115",
+                "CUST-70114"
               ],
               "45.132.192.7": [
                 "CUST-70113",
@@ -1059,10 +1059,10 @@
           "evidence": {
             "mule_accounts": {
               "ACC-MULE-9011": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70114"
               ]
             },
             "max_degree": 4
@@ -1073,27 +1073,27 @@
           "severity": 90,
           "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
           "entities": [
-            "CUST-70114",
-            "CUST-70113",
             "CUST-70115",
-            "CUST-70112"
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70114"
           ],
           "evidence": {
             "synchronized_accounts": [
-              "CUST-70114",
-              "CUST-70113",
               "CUST-70115",
-              "CUST-70112"
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70114"
             ]
           }
         }
       ],
       "entities": {
         "customers": [
-          "CUST-70114",
-          "CUST-70113",
           "CUST-70115",
-          "CUST-70112"
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70114"
         ],
         "devices": [
           "DEV-RING-4417"
@@ -1109,8 +1109,8 @@
       "graph": {
         "nodes": [
           {
-            "id": "CUST-70114",
-            "label": "Ananya Roy",
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
             "type": "customer",
             "isFlagged": true
           },
@@ -1121,14 +1121,14 @@
             "isFlagged": true
           },
           {
-            "id": "CUST-70115",
-            "label": "Karan Malhotra",
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
             "type": "customer",
             "isFlagged": true
           },
           {
-            "id": "CUST-70112",
-            "label": "Vikram Sethi",
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
             "type": "customer",
             "isFlagged": true
           },
@@ -1159,7 +1159,7 @@
         ],
         "edges": [
           {
-            "source": "CUST-70114",
+            "source": "CUST-70115",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -1169,12 +1169,12 @@
             "relationship": "USED_DEVICE"
           },
           {
-            "source": "CUST-70115",
+            "source": "CUST-70112",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
           {
-            "source": "CUST-70112",
+            "source": "CUST-70114",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -1189,17 +1189,17 @@
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
-            "source": "CUST-70114",
-            "target": "103.21.244.18",
-            "relationship": "ROUTED_THROUGH_IP"
-          },
-          {
             "source": "CUST-70115",
             "target": "103.21.244.18",
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
             "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
@@ -1209,12 +1209,12 @@
             "relationship": "TRANSFERRED_TO"
           },
           {
-            "source": "CUST-70115",
+            "source": "CUST-70112",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
           {
-            "source": "CUST-70112",
+            "source": "CUST-70114",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           }
@@ -1368,10 +1368,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:50:59.384687+00:00"
+    "created_at": "2026-09-07T09:09:11.866135+00:00"
   },
   {
-    "report_id": "REP-TX-70003-1788771060",
+    "report_id": "REP-TX-70003-1788772153",
     "transaction_id": "TX-70003",
     "summary": "Copilot assessed TX TX-70003 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
     "confidence_score": 92,
@@ -1425,10 +1425,10 @@
           "evidence": {
             "shared_devices": {
               "DEV-RING-4417": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70114",
+                "CUST-70112",
+                "CUST-70113"
               ]
             },
             "max_overlap_count": 4
@@ -1445,8 +1445,8 @@
           "evidence": {
             "shared_ips": {
               "103.21.244.18": [
-                "CUST-70114",
-                "CUST-70115"
+                "CUST-70115",
+                "CUST-70114"
               ],
               "45.132.192.7": [
                 "CUST-70113",
@@ -1492,10 +1492,10 @@
           "evidence": {
             "mule_accounts": {
               "ACC-MULE-9011": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70114",
+                "CUST-70112",
+                "CUST-70113"
               ]
             },
             "max_degree": 4
@@ -1506,27 +1506,27 @@
           "severity": 90,
           "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
           "entities": [
-            "CUST-70114",
-            "CUST-70113",
             "CUST-70115",
-            "CUST-70112"
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70114"
           ],
           "evidence": {
             "synchronized_accounts": [
-              "CUST-70114",
-              "CUST-70113",
               "CUST-70115",
-              "CUST-70112"
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70114"
             ]
           }
         }
       ],
       "entities": {
         "customers": [
-          "CUST-70114",
-          "CUST-70113",
           "CUST-70115",
-          "CUST-70112"
+          "CUST-70114",
+          "CUST-70112",
+          "CUST-70113"
         ],
         "devices": [
           "DEV-RING-4417"
@@ -1542,26 +1542,26 @@
       "graph": {
         "nodes": [
           {
-            "id": "CUST-70114",
-            "label": "Ananya Roy",
-            "type": "customer",
-            "isFlagged": true
-          },
-          {
-            "id": "CUST-70113",
-            "label": "Rajesh Nair",
-            "type": "customer",
-            "isFlagged": true
-          },
-          {
             "id": "CUST-70115",
             "label": "Karan Malhotra",
             "type": "customer",
             "isFlagged": true
           },
           {
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
             "id": "CUST-70112",
             "label": "Vikram Sethi",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70113",
+            "label": "Rajesh Nair",
             "type": "customer",
             "isFlagged": true
           },
@@ -1592,22 +1592,22 @@
         ],
         "edges": [
           {
-            "source": "CUST-70114",
-            "target": "DEV-RING-4417",
-            "relationship": "USED_DEVICE"
-          },
-          {
-            "source": "CUST-70113",
-            "target": "DEV-RING-4417",
-            "relationship": "USED_DEVICE"
-          },
-          {
             "source": "CUST-70115",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
           {
+            "source": "CUST-70114",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
             "source": "CUST-70112",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -1622,32 +1622,32 @@
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
-            "source": "CUST-70114",
-            "target": "103.21.244.18",
-            "relationship": "ROUTED_THROUGH_IP"
-          },
-          {
             "source": "CUST-70115",
             "target": "103.21.244.18",
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
             "source": "CUST-70114",
-            "target": "ACC-MULE-9011",
-            "relationship": "TRANSFERRED_TO"
-          },
-          {
-            "source": "CUST-70113",
-            "target": "ACC-MULE-9011",
-            "relationship": "TRANSFERRED_TO"
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
           },
           {
             "source": "CUST-70115",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70114",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
           {
             "source": "CUST-70112",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70113",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           }
@@ -1801,10 +1801,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:51:00.917247+00:00"
+    "created_at": "2026-09-07T09:09:13.466221+00:00"
   },
   {
-    "report_id": "REP-TX-70004-1788771062",
+    "report_id": "REP-TX-70004-1788772155",
     "transaction_id": "TX-70004",
     "summary": "Copilot assessed TX TX-70004 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
     "confidence_score": 92,
@@ -1858,10 +1858,10 @@
           "evidence": {
             "shared_devices": {
               "DEV-RING-4417": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70114"
               ]
             },
             "max_overlap_count": 4
@@ -1878,8 +1878,8 @@
           "evidence": {
             "shared_ips": {
               "103.21.244.18": [
-                "CUST-70114",
-                "CUST-70115"
+                "CUST-70115",
+                "CUST-70114"
               ],
               "45.132.192.7": [
                 "CUST-70113",
@@ -1925,10 +1925,10 @@
           "evidence": {
             "mule_accounts": {
               "ACC-MULE-9011": [
-                "CUST-70114",
-                "CUST-70113",
                 "CUST-70115",
-                "CUST-70112"
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70114"
               ]
             },
             "max_degree": 4
@@ -1939,27 +1939,27 @@
           "severity": 90,
           "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
           "entities": [
-            "CUST-70114",
-            "CUST-70113",
             "CUST-70115",
-            "CUST-70112"
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70114"
           ],
           "evidence": {
             "synchronized_accounts": [
-              "CUST-70114",
-              "CUST-70113",
               "CUST-70115",
-              "CUST-70112"
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70114"
             ]
           }
         }
       ],
       "entities": {
         "customers": [
-          "CUST-70114",
-          "CUST-70113",
           "CUST-70115",
-          "CUST-70112"
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70114"
         ],
         "devices": [
           "DEV-RING-4417"
@@ -1975,8 +1975,8 @@
       "graph": {
         "nodes": [
           {
-            "id": "CUST-70114",
-            "label": "Ananya Roy",
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
             "type": "customer",
             "isFlagged": true
           },
@@ -1987,14 +1987,14 @@
             "isFlagged": true
           },
           {
-            "id": "CUST-70115",
-            "label": "Karan Malhotra",
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
             "type": "customer",
             "isFlagged": true
           },
           {
-            "id": "CUST-70112",
-            "label": "Vikram Sethi",
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
             "type": "customer",
             "isFlagged": true
           },
@@ -2025,7 +2025,7 @@
         ],
         "edges": [
           {
-            "source": "CUST-70114",
+            "source": "CUST-70115",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -2035,12 +2035,12 @@
             "relationship": "USED_DEVICE"
           },
           {
-            "source": "CUST-70115",
+            "source": "CUST-70112",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
           {
-            "source": "CUST-70112",
+            "source": "CUST-70114",
             "target": "DEV-RING-4417",
             "relationship": "USED_DEVICE"
           },
@@ -2055,17 +2055,17 @@
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
-            "source": "CUST-70114",
-            "target": "103.21.244.18",
-            "relationship": "ROUTED_THROUGH_IP"
-          },
-          {
             "source": "CUST-70115",
             "target": "103.21.244.18",
             "relationship": "ROUTED_THROUGH_IP"
           },
           {
             "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
@@ -2075,12 +2075,12 @@
             "relationship": "TRANSFERRED_TO"
           },
           {
-            "source": "CUST-70115",
+            "source": "CUST-70112",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           },
           {
-            "source": "CUST-70112",
+            "source": "CUST-70114",
             "target": "ACC-MULE-9011",
             "relationship": "TRANSFERRED_TO"
           }
@@ -2234,10 +2234,10 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:51:02.624359+00:00"
+    "created_at": "2026-09-07T09:09:15.007960+00:00"
   },
   {
-    "report_id": "REP-TX-ERR-9999-1788771064",
+    "report_id": "REP-TX-ERR-9999-1788772156",
     "transaction_id": "TX-ERR-9999",
     "summary": "SYSTEM ERROR: Investigation pipeline failed schema validation. Escalated to manual review.",
     "confidence_score": 0,
@@ -2321,6 +2321,6 @@
     "model_id": "deterministic-fixture-v1",
     "pipeline_version": "1.2.0",
     "prompt_version": "1.0.0",
-    "created_at": "2026-09-07T08:51:04.232590+00:00"
+    "created_at": "2026-09-07T09:09:16.452041+00:00"
   }
 ]

@@ -26,3 +26,13 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+
+# AI tool scaffolding - installed/vendored per developer, not project source.
+# .kiro/settings/mcp.json in particular hardcodes an absolute machine path.
+# .claude/launch.json is the one exception: it's the shared dev-server config
+# run.bat depends on, so it's intentionally still tracked.
+.claude/skills/
+.claude/agents/
+.claude/settings.local.json
+.kiro/
+.codex/

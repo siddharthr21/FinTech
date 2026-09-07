@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents import llm
 from agents.prompts import AGENT_1_SYSTEM_PROMPT, AGENT_2_SYSTEM_PROMPT, AGENT_3_SYSTEM_PROMPT, PROMPT_VERSION
+from agents.redact import RedactionContext
 from pipeline.datasource import airtable_configured, get_datasource, get_report_sinks
 from pipeline.deterministic_report_generator import (
     build_deterministic_investigation_report,
@@ -81,7 +82,7 @@ class FraudCopilotPipeline:
         except llm.AgentCallError as e:
             return {"error": "agent_call_failed", "detail": str(e)}
 
-    def run_agent1_transaction_pattern(self, transaction: Dict[str, Any], recent_txs: List[Dict[str, Any]], force_error: bool = False) -> Dict[str, Any]:
+    def run_agent1_transaction_pattern(self, transaction: Dict[str, Any], recent_txs: List[Dict[str, Any]], force_error: bool = False, redaction_ctx: "RedactionContext" = None) -> Dict[str, Any]:
         """
         Agent 1: Transaction-Pattern Agent.
         Analyzes velocity, geography (impossible travel), amount deviation/structuring, and merchant category.
@@ -91,9 +92,13 @@ class FraudCopilotPipeline:
             return {"error": "malformed_output", "raw": "Invalid agent output without required schema"}
 
         if self.live:
+            # device_id/ip_address are tokenized before this leaves the process;
+            # see agents/redact.py for what's redacted and why.
+            payload_tx = redaction_ctx.redact_transaction(transaction) if redaction_ctx else transaction
+            payload_recent = redaction_ctx.redact_transactions(recent_txs) if redaction_ctx else recent_txs
             return self._call_or_escalate(AGENT_1_SYSTEM_PROMPT, {
-                "target_transaction": transaction,
-                "customer_recent_transactions": recent_txs,
+                "target_transaction": payload_tx,
+                "customer_recent_transactions": payload_recent,
             })
 
         tx_id = transaction["transaction_id"]
@@ -191,7 +196,7 @@ class FraudCopilotPipeline:
             "overall_pattern_risk": overall_risk
         }
 
-    def run_agent2_customer_history(self, transaction: Dict[str, Any], customer: Dict[str, Any], history: List[Dict[str, Any]], tickets: List[Dict[str, Any]], force_error: bool = False) -> Dict[str, Any]:
+    def run_agent2_customer_history(self, transaction: Dict[str, Any], customer: Dict[str, Any], history: List[Dict[str, Any]], tickets: List[Dict[str, Any]], force_error: bool = False, redaction_ctx: "RedactionContext" = None) -> Dict[str, Any]:
         """
         Agent 2: Customer-History Agent.
         Analyzes account maturity, credential churn, prior flags, and unauthorized access complaints.
@@ -200,10 +205,16 @@ class FraudCopilotPipeline:
             return {"error": "malformed_output"}
 
         if self.live:
+            # customer.name and any device_id in the history events are
+            # tokenized before this leaves the process; support_tickets isn't
+            # redacted here (no structured PII field on that table today).
+            payload_tx = redaction_ctx.redact_transaction(transaction) if redaction_ctx else transaction
+            payload_customer = redaction_ctx.redact_customer(customer) if redaction_ctx else customer
+            payload_history = redaction_ctx.redact_history_events(history) if redaction_ctx else history
             return self._call_or_escalate(AGENT_2_SYSTEM_PROMPT, {
-                "target_transaction": transaction,
-                "customer_profile": customer,
-                "customer_history": history,
+                "target_transaction": payload_tx,
+                "customer_profile": payload_customer,
+                "customer_history": payload_history,
                 "support_tickets": tickets,
             })
 
@@ -435,6 +446,13 @@ class FraudCopilotPipeline:
         agent2_out = None
         agent3_out = None
         ring_analysis = None
+        # One redaction context per investigation: tokens stay stable across
+        # all three agent calls for this transaction (so a shared device/IP
+        # still reads as "the same token" to Agent 3), and are rehydrated
+        # back to real values in one pass below, right before the report is
+        # assembled. Only live mode calls an LLM at all, so offline mode has
+        # nothing to redact.
+        redaction_ctx = RedactionContext() if self.live else None
 
         # Adaptive Investigation Loop (spec §4.2, §12)
         while not state.should_stop():
@@ -445,7 +463,7 @@ class FraudCopilotPipeline:
 
             if next_check == "transaction_history":
                 agent1_out = self.run_agent1_transaction_pattern(
-                    transaction, recent_txs, force_error=force_agent_error
+                    transaction, recent_txs, force_error=force_agent_error, redaction_ctx=redaction_ctx
                 )
                 state.record_step("transaction_history", "transaction_pattern", agent1_out, trigger)
                 if not force_agent_error and validate_agent1_schema(agent1_out):
@@ -453,7 +471,7 @@ class FraudCopilotPipeline:
 
             elif next_check == "account_identity":
                 agent2_out = self.run_agent2_customer_history(
-                    transaction, customer, history, tickets, force_error=False
+                    transaction, customer, history, tickets, force_error=False, redaction_ctx=redaction_ctx
                 )
                 state.record_step("account_identity", "customer_history", agent2_out, trigger)
                 if validate_agent2_schema(agent2_out):
@@ -497,6 +515,15 @@ class FraudCopilotPipeline:
                         {"findings": []},
                         "skipped: force_error or no customer_id"
                     )
+
+        # Rehydrate tokens back to real values now that every LLM call for
+        # this transaction is done. Deliberately not done any earlier: Agent
+        # 3's payload is built from agent1_out/agent2_out, and it must never
+        # see real values either - see agents/redact.py's module docstring.
+        if redaction_ctx:
+            agent1_out = redaction_ctx.rehydrate(agent1_out)
+            agent2_out = redaction_ctx.rehydrate(agent2_out)
+            agent3_out = redaction_ctx.rehydrate(agent3_out)
 
         # Deterministic Report Generator (Action-Level Guardrail)
         report = build_deterministic_investigation_report(
