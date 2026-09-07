@@ -8,10 +8,14 @@ Can operate in:
 2. Grounded Reference Evaluation mode (producing exact verified outputs according to prompt specifications)
 """
 
+import http.client
 import os
 import sys
 import json
 import argparse
+import time
+import urllib.error
+import urllib.request
 from typing import Dict, Any, List, Optional
 
 # Ensure project root is in python path
@@ -24,6 +28,72 @@ from pipeline.deterministic_report_generator import (
     validate_agent1_schema,
     validate_agent2_schema,
 )
+
+
+def airtable_configured() -> bool:
+    return bool(os.environ.get("AIRTABLE_API_KEY") and os.environ.get("AIRTABLE_BASE_ID"))
+
+
+def write_report_to_airtable(report: Dict[str, Any]) -> None:
+    """Mirrors the Make.com scenario's 'Store Investigation Report' step (Ch.9.4
+    Runtime Monitoring), so a --live/--offline pipeline run leaves the same audit
+    trail Investigation_Reports table the Make.com trigger path writes to.
+
+    Never raises: a monitoring-sink outage must not take down the investigation
+    itself. data/investigation_reports.json is always written regardless of
+    whether this call succeeds; a failure here only prints a warning.
+    """
+    api_key = os.environ.get("AIRTABLE_API_KEY")
+    base_id = os.environ.get("AIRTABLE_BASE_ID")
+    if not (api_key and base_id):
+        return
+
+    # Field names/types match scripts/setup_airtable.py's TABLE_DEFINITIONS for
+    # Investigation_Reports. analyst_decision/analyst_notes are singleSelect /
+    # optional and are omitted entirely (not sent as null) when unset, same as
+    # that script's seeding logic.
+    fields = {
+        "report_id": report["report_id"],
+        "transaction_id": report["transaction_id"],
+        "summary": report["summary"],
+        "confidence_score": report["confidence_score"],
+        "verdict": report["verdict"],
+        "fused_reasoning": report["fused_reasoning"],
+        "evidence_trail": json.dumps(report.get("evidence_trail", [])),
+        "recommended_action": report["recommended_action"],
+        "pipeline_status": report["pipeline_status"],
+        "agent1_output_json": report.get("agent1_output_json", "{}"),
+        "agent2_output_json": report.get("agent2_output_json", "{}"),
+        "agent3_output_json": report.get("agent3_output_json", "{}"),
+        "created_at": report["created_at"],
+    }
+    if report.get("analyst_decision"):
+        fields["analyst_decision"] = report["analyst_decision"]
+    if report.get("analyst_notes"):
+        fields["analyst_notes"] = report["analyst_notes"]
+
+    url = f"https://api.airtable.com/v0/{base_id}/Investigation_Reports"
+    body = json.dumps({"records": [{"fields": fields}], "typecast": True}).encode("utf-8")
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    for attempt in range(3):
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                json.loads(resp.read().decode("utf-8"))
+            print(f"[Airtable] Wrote {report['report_id']} to Investigation_Reports.")
+            return
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:300]
+            if e.code == 429 and attempt < 2:
+                time.sleep(2)
+                continue
+            print(f"[Airtable] WARNING: failed to write {report['report_id']} (HTTP {e.code}): {detail}")
+            return
+        except (OSError, http.client.HTTPException) as e:
+            print(f"[Airtable] WARNING: could not reach Airtable for {report['report_id']}: {e}")
+            return
+
 
 class FraudCopilotPipeline:
     def __init__(self, data_path: str = "data/seed_data.json", output_path: str = "data/investigation_reports.json", live: bool = False):
@@ -394,6 +464,7 @@ class FraudCopilotPipeline:
             if tx.get("flagged"):
                 rep = self.process_transaction(tx)
                 reports.append(rep)
+                write_report_to_airtable(rep)
 
         # Also inject one deliberate "Agent Error - Manual Review Required" report
         # to satisfy Chapter 8.1 / Stopping Condition verification!
@@ -406,6 +477,7 @@ class FraudCopilotPipeline:
         }
         error_rep = self.process_transaction(error_tx, force_agent_error=True)
         reports.append(error_rep)
+        write_report_to_airtable(error_rep)
 
         # Save to output file
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
@@ -436,6 +508,11 @@ if __name__ == "__main__":
               f"({os.environ.get('LLM_MODEL', llm.DEFAULT_MODEL)})")
     else:
         print("[MODE] Offline reference fixtures (no LLM configured; run with --live after setting LLM_API_KEY)")
+
+    if airtable_configured():
+        print(f"[MODE] Also writing each report to Airtable base {os.environ.get('AIRTABLE_BASE_ID')} / Investigation_Reports")
+    else:
+        print("[MODE] AIRTABLE_API_KEY/AIRTABLE_BASE_ID not set - reports saved to data/investigation_reports.json only")
 
     pipeline = FraudCopilotPipeline(live=live)
     reports = pipeline.run_all_cases()
