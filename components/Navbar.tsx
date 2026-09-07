@@ -44,7 +44,7 @@ export default function Navbar() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm sm:text-base font-bold text-slate-100 tracking-tight">FraudCopilot</span>
+              <span className="text-sm sm:text-base font-bold text-slate-100 tracking-tight">Fin-Shield</span>
               <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded bg-[#10192e] text-blue-300 border border-[#1e2f57]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 RADAR LIVE

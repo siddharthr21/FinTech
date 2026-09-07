@@ -36,7 +36,7 @@ from pipeline.investigation_state import InvestigationState
 PIPELINE_VERSION = "1.2.0"
 
 
-class FraudCopilotPipeline:
+class FinShieldPipeline:
     def __init__(
         self,
         data_path: str = "data/seed_data.json",
@@ -582,8 +582,12 @@ class FraudCopilotPipeline:
         print(f"[SUCCESS] Generated {len(reports)} investigation reports in '{self.output_path}'.")
         return reports
 
+
+# Backward compatibility alias
+FraudCopilotPipeline = FinShieldPipeline
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run Fraud Copilot Investigation Pipeline")
+    parser = argparse.ArgumentParser(description="Run Fin-Shield Investigation Pipeline")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--live", action="store_true", help="Force live LLM agents (requires LLM_API_KEY)")
     mode.add_argument("--offline", action="store_true", help="Force the offline reference fixtures, no network calls")
@@ -619,7 +623,7 @@ if __name__ == "__main__":
     else:
         print("[MODE] AIRTABLE_API_KEY/AIRTABLE_BASE_ID not set - reports saved to data/investigation_reports.json only")
 
-    pipeline = FraudCopilotPipeline(live=live, source=args.source)
+    pipeline = FinShieldPipeline(live=live, source=args.source)
     reports = pipeline.run_all_cases()
     for r in reports:
         print(f"-> Report {r['report_id']} | TX: {r['transaction_id']} | Score: {r['confidence_score']}% | Verdict: {r['verdict']} | Status: {r['pipeline_status']}")

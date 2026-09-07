@@ -5,7 +5,7 @@ class SoundManager {
 
   constructor() {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("fraudcopilot_sound_muted");
+      const saved = localStorage.getItem("finshield_sound_muted") ?? localStorage.getItem("fraudcopilot_sound_muted");
       this.muted = saved === "true";
     }
   }
@@ -31,7 +31,7 @@ class SoundManager {
   public toggleMute(): boolean {
     this.muted = !this.muted;
     if (typeof window !== "undefined") {
-      localStorage.setItem("fraudcopilot_sound_muted", String(this.muted));
+      localStorage.setItem("finshield_sound_muted", String(this.muted));
     }
     if (!this.muted) {
       this.playClick();

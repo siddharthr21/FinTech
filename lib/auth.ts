@@ -3,7 +3,7 @@ import type { AnalystUser } from "./types";
 
 export const SESSION_COOKIE_NAME = "analyst_session";
 
-const SESSION_SECRET = process.env.ANALYST_AUTH_SECRET || "fraudcopilot-analyst-session-secret-key-2026";
+const SESSION_SECRET = process.env.ANALYST_AUTH_SECRET || "finshield-analyst-session-secret-key-2026";
 
 /**
  * Pre-configured certified fraud analysts roster.
@@ -13,7 +13,7 @@ export const CERTIFIED_ANALYSTS: (AnalystUser & { passwordHash?: string })[] = [
   {
     id: "ANL-802",
     name: "Sarah Chen",
-    email: "sarah.chen@fraudcopilot.internal",
+    email: "sarah.chen@finshield.internal",
     role: "Lead Fraud Investigator",
     tier: "Tier 3 (Principal Reviewer)",
     initials: "SC",
@@ -22,7 +22,7 @@ export const CERTIFIED_ANALYSTS: (AnalystUser & { passwordHash?: string })[] = [
   {
     id: "ANL-419",
     name: "Marcus Vance",
-    email: "marcus.vance@fraudcopilot.internal",
+    email: "marcus.vance@finshield.internal",
     role: "Senior AML Compliance Analyst",
     tier: "Tier 2 (Senior Reviewer)",
     initials: "MV",
@@ -31,7 +31,7 @@ export const CERTIFIED_ANALYSTS: (AnalystUser & { passwordHash?: string })[] = [
   {
     id: "ANL-105",
     name: "Elena Rostova",
-    email: "elena.rostova@fraudcopilot.internal",
+    email: "elena.rostova@finshield.internal",
     role: "Fraud Operations Specialist",
     tier: "Tier 1 (Triage Specialist)",
     initials: "ER",

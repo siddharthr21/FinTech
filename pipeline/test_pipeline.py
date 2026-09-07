@@ -16,9 +16,13 @@ from pipeline.deterministic_report_generator import (
     build_deterministic_investigation_report,
     validate_ring_schema,
 )
-from pipeline.pipeline_runner import FraudCopilotPipeline
+from pipeline.pipeline_runner import FinShieldPipeline, FraudCopilotPipeline
 from pipeline.ring_detector import RingDetector
 from agents.redact import RedactionContext
+
+
+def test_backward_compatibility_alias():
+    assert FraudCopilotPipeline is FinShieldPipeline
 
 VALID_A1 = {
     "agent": "transaction_pattern",
@@ -93,7 +97,7 @@ def test_malformed_agent_output_escalates():
 
 def test_benchmark_cases_match_documented_scores():
     """The README's benchmark table is a claim judges will check."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     expected = {"TX-98214": (94, "Likely Fraud"), "TX-98215": (38, "Likely Legitimate"), "TX-98217": (68, "Needs Review")}
@@ -112,7 +116,7 @@ def test_reports_carry_provenance():
     assert rep["model_provider"] is None  # build() doesn't pass provenance - None is honest, not a crash
     assert rep["pipeline_version"] is None
 
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
@@ -170,7 +174,7 @@ def test_ring_schema_validation():
 
 def test_report_includes_ring_analysis():
     """Investigation reports for syndicate transactions must carry validated ring_score and network_findings."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     tx_syn = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-70001")
@@ -183,7 +187,7 @@ def test_report_includes_ring_analysis():
 
 def test_investigation_path_is_evidence_driven():
     """Spec §4.2, §4.3: Next agent is chosen because of previous evidence."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
@@ -199,7 +203,7 @@ def test_investigation_path_is_evidence_driven():
 
 def test_hypotheses_sum_to_one():
     """Spec §13: Hypotheses reflect competing theories and sum to 1.0."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     for tx in pipeline.datasource.get_flagged_transactions():
@@ -214,7 +218,7 @@ def test_hypotheses_sum_to_one():
 
 def test_investigation_path_recorded_in_report():
     """Spec §4.6: Report carries ordered investigation_path with step metadata."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98215")
@@ -231,7 +235,7 @@ def test_investigation_path_recorded_in_report():
 
 def test_supporting_vs_contradicting_evidence():
     """Spec §15: False-positive discrimination partitions supporting and contradicting evidence."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     tx_benign = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98215")
@@ -246,7 +250,7 @@ def test_supporting_vs_contradicting_evidence():
 
 def test_evidence_ids_are_unique_and_categorized():
     """Spec §3.2, §14: Evidence records must carry unique IDs, categories, and entities."""
-    pipeline = FraudCopilotPipeline(
+    pipeline = FinShieldPipeline(
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
@@ -347,7 +351,7 @@ def test_live_pipeline_never_sends_raw_pii_to_the_llm_client():
 
     llm_module.call_agent = spy_call_agent
     try:
-        pipeline = FraudCopilotPipeline(
+        pipeline = FinShieldPipeline(
             data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json"),
             live=True,
         )

@@ -13,7 +13,7 @@ pipeline_runner.py never change, only this file does. See the README's
 The write side mirrors this: ReportSink is where a finished Investigation
 Report goes. AirtableReportSink is the only implementation today (the local
 data/investigation_reports.json file is written directly by
-FraudCopilotPipeline.run_all_cases, not through a sink - see the docstring
+FinShieldPipeline.run_all_cases, not through a sink - see the docstring
 there). A bank's case-management system would add its own ReportSink
 alongside it, not replace it.
 """

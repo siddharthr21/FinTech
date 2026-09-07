@@ -21,7 +21,7 @@ interface AnalystSignInProps {
 
 export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
   const { availableAnalysts, login } = useAuth();
-  const [email, setEmail] = useState("sarah.chen@fraudcopilot.internal");
+  const [email, setEmail] = useState("sarah.chen@finshield.internal");
   const [password, setPassword] = useState("investigator2026");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -71,7 +71,7 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
             Investigator Access Gateway
           </h1>
           <p className="text-xs text-slate-400 max-w-sm mx-auto font-mono">
-            FraudCopilot Security Perimeter &bull; Certified Human Checkpoint
+            Fin-Shield Security Perimeter &bull; Certified Human Checkpoint
           </p>
         </div>
 
@@ -101,7 +101,7 @@ export default function AnalystSignIn({ onBrowseGuest }: AnalystSignInProps) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="analyst@fraudcopilot.internal"
+                  placeholder="analyst@finshield.internal"
                   required
                   className="w-full pl-10 pr-3.5 py-2.5 bg-[#090d15] border border-[#1c2538] rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition font-sans"
                 />

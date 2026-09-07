@@ -636,8 +636,8 @@ def main():
 
     # 3. Run Pipeline to generate investigation reports
     print("\nExecuting multi-agent investigation pipeline...")
-    from pipeline.pipeline_runner import FraudCopilotPipeline
-    pipeline = FraudCopilotPipeline(data_path=seed_file_path)
+    from pipeline.pipeline_runner import FinShieldPipeline
+    pipeline = FinShieldPipeline(data_path=seed_file_path)
     reports = pipeline.run_all_cases()
 
     # 4. Sync Investigation Reports to Airtable

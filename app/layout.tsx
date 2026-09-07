@@ -4,8 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "FraudCopilot | Multi-Agent Fraud Investigation Copilot",
-  description: "Enterprise multi-agent fraud investigation copilot with deterministic safety guardrails and evidence-grounded reasoning.",
+  title: "Fin-Shield | Multi-Agent Fraud Investigation Platform",
+  description: "Enterprise multi-agent fraud investigation platform with deterministic safety guardrails and evidence-grounded reasoning.",
 };
 
 export const viewport: Viewport = {
@@ -34,7 +34,7 @@ export default function RootLayout({
             <footer className="border-t border-[#1a2234] py-4 text-center text-xs text-slate-500 bg-[#07090e]">
               <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <span className="font-mono text-[11px] text-slate-500">
-                  FraudCopilot Operations Cockpit &bull; Deterministic Multi-Agent System
+                  Fin-Shield Operations Cockpit &bull; Deterministic Multi-Agent System
                 </span>
                 <span className="font-mono text-[11px] text-slate-500 flex items-center gap-2">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>

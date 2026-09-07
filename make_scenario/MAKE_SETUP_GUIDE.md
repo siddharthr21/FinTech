@@ -36,7 +36,7 @@ The two specialist domains — transaction pattern analysis and customer/behavio
 ### Airtable Connection
 1. Click on Module 1 (`Trigger: Flagged Transactions`).
 2. Add your Airtable Connection using your **Personal Access Token** (PAT).
-3. Select your Base (`FraudCopilot`) and the `Transactions` table.
+3. Select your Base (`Fin-Shield`) and the `Transactions` table.
 4. Update the remaining Airtable modules (Search Records and Create Record) to use this connection.
 
 ### AI Model Connection (Claude 3.5 Sonnet or OpenAI GPT-4o)
