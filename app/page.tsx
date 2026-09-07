@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { InvestigationReport } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 import AnalystSignIn from "@/components/AnalystSignIn";
+import RiskSpeedometer from "@/components/RiskSpeedometer";
+import WhatIfRiskSimulator from "@/components/WhatIfRiskSimulator";
+import PipelineStepper from "@/components/PipelineStepper";
+import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
+import { soundManager } from "@/lib/sound";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -24,6 +29,12 @@ import {
   ArrowLeft,
   ListFilter,
   FileText,
+  Search,
+  Copy,
+  Check,
+  Sliders,
+  Cpu,
+  Keyboard,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -39,7 +50,12 @@ export default function Dashboard() {
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [showRawJsonModal, setShowRawJsonModal] = useState<boolean>(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [detailSubTab, setDetailSubTab] = useState<"findings" | "pipeline" | "simulator">("findings");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const fetchReports = useCallback(async () => {
     setLoading(true);
@@ -53,7 +69,6 @@ export default function Dashboard() {
           setSelectedReportId(data.reports[0].report_id);
         }
       } else {
-        // An empty queue and an unreachable datastore are not the same thing.
         setLoadError(data.error || "The investigation datastore returned an unexpected response.");
       }
     } catch (e: any) {
@@ -70,9 +85,30 @@ export default function Dashboard() {
 
   const selectedReport = reports.find((r) => r.report_id === selectedReportId) || reports[0];
 
-  const handleDecision = async (decision: "Approved-Fraud" | "False-Positive" | "Escalated") => {
+  const selectCase = useCallback((id: string) => {
+    setSelectedReportId(id);
+    setActionSuccessMessage(null);
+    setActionErrorMessage(null);
+    setMobileTab("detail");
+    const target = reports.find((r) => r.report_id === id);
+    if (target && target.confidence_score >= 75) {
+      soundManager.playRadarPing();
+    } else {
+      soundManager.playClick();
+    }
+  }, [reports]);
+
+  const copyToClipboard = (text: string, fieldId: string) => {
+    soundManager.playClick();
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldId);
+    setTimeout(() => setCopiedField(null), 1800);
+  };
+
+  const handleDecision = useCallback(async (decision: "Approved-Fraud" | "False-Positive" | "Escalated") => {
     if (!selectedReport) return;
     if (!analyst) {
+      soundManager.playAlertBuzz();
       setActionErrorMessage("Authentication required (Handbook Layer 1 & 3): Please sign in as an authorized analyst before executing case decisions.");
       return;
     }
@@ -92,29 +128,122 @@ export default function Dashboard() {
 
       const data = await res.json();
       if (data.success) {
+        soundManager.playSuccessChime();
         const closedByText = data.closed_by || `${analyst.name} (${analyst.id})`;
         setActionSuccessMessage(`Success: Case marked as ${decision} by ${closedByText}. Audit datastore updated to Closed.`);
         setAnalystNotes("");
-        // Refresh reports list
         await fetchReports();
       } else {
+        soundManager.playAlertBuzz();
         setActionErrorMessage(`Action failed: ${data.error || "Could not persist decision to datastore."}`);
       }
     } catch (err: any) {
+      soundManager.playAlertBuzz();
       setActionErrorMessage(`Network error: ${err.message || "Failed to communicate with verification API."}`);
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [selectedReport, analyst, analystNotes, fetchReports]);
 
-  // Filtered reports
+  // Filtered reports with instant search
   const filteredReports = reports.filter((r) => {
-    if (filterStatus === "all") return true;
-    if (filterStatus === "pending") return r.pipeline_status === "Pending Analyst Review";
-    if (filterStatus === "error") return r.pipeline_status === "Agent Error - Manual Review Required";
-    if (filterStatus === "closed") return r.pipeline_status === "Closed";
-    return true;
+    if (filterStatus === "pending" && r.pipeline_status !== "Pending Analyst Review") return false;
+    if (filterStatus === "error" && r.pipeline_status !== "Agent Error - Manual Review Required") return false;
+    if (filterStatus === "closed" && r.pipeline_status !== "Closed") return false;
+
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      r.transaction_id.toLowerCase().includes(q) ||
+      r.report_id.toLowerCase().includes(q) ||
+      r.summary.toLowerCase().includes(q) ||
+      r.verdict.toLowerCase().includes(q) ||
+      (r.closed_by && r.closed_by.toLowerCase().includes(q))
+    );
   });
+
+  // Global Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInputActive = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+      if (e.key === "Escape") {
+        setShowShortcutsModal(false);
+        setShowRawJsonModal(false);
+        if (isInputActive) {
+          (target as HTMLElement).blur();
+        }
+        return;
+      }
+
+      if (isInputActive) return;
+
+      if (e.key === "/" || e.key === "f") {
+        e.preventDefault();
+        soundManager.playClick();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      if (e.key === "?") {
+        e.preventDefault();
+        soundManager.playClick();
+        setShowShortcutsModal((prev) => !prev);
+        return;
+      }
+
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        if (filteredReports.length === 0) return;
+        const currentIndex = filteredReports.findIndex((r) => r.report_id === selectedReportId);
+        const nextIndex = currentIndex < filteredReports.length - 1 ? currentIndex + 1 : 0;
+        selectCase(filteredReports[nextIndex].report_id);
+        return;
+      }
+
+      if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (filteredReports.length === 0) return;
+        const currentIndex = filteredReports.findIndex((r) => r.report_id === selectedReportId);
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredReports.length - 1;
+        selectCase(filteredReports[prevIndex].report_id);
+        return;
+      }
+
+      if (e.key === "1") {
+        e.preventDefault();
+        soundManager.playClick();
+        handleDecision("Approved-Fraud");
+        return;
+      }
+
+      if (e.key === "2") {
+        e.preventDefault();
+        soundManager.playClick();
+        handleDecision("False-Positive");
+        return;
+      }
+
+      if (e.key === "3") {
+        e.preventDefault();
+        soundManager.playClick();
+        handleDecision("Escalated");
+        return;
+      }
+    };
+
+    const handleToggleShortcuts = () => {
+      setShowShortcutsModal((prev) => !prev);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("toggle-shortcuts-modal", handleToggleShortcuts);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("toggle-shortcuts-modal", handleToggleShortcuts);
+    };
+  }, [filteredReports, selectedReportId, selectCase, handleDecision]);
 
   // Metrics
   const totalCases = reports.length;
@@ -267,6 +396,38 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {/* Instant Search Bar */}
+          <div className="px-3 py-2 bg-[#0a0e17] border-b border-[#182133]">
+            <div className="relative flex items-center">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tx ID, report, verdict... (/)"
+                className="w-full bg-[#070b12] border border-[#1b253b] focus:border-blue-500 rounded-lg pl-8 pr-14 py-1.5 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none transition"
+              />
+              <div className="absolute right-2 flex items-center gap-1">
+                {searchQuery ? (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="text-slate-400 hover:text-white text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#131a2a] border border-[#1e273e]"
+                  >
+                    Clear
+                  </button>
+                ) : (
+                  <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-[#121826] border border-[#1e273d] rounded">
+                    /
+                  </kbd>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Filter Pills */}
           <div className="px-3 py-2 bg-[#090d15]/80 border-b border-[#182133] flex gap-1.5 text-xs font-mono overflow-x-auto scrollbar-none">
             <button
@@ -415,13 +576,48 @@ export default function Dashboard() {
 
               {/* Case Header Card */}
               <div className="bg-[#0e131f] border border-[#1d2538] rounded-xl p-4 sm:p-5 shadow-terminal">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#1b2336] pb-4">
-                  <div className="min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1b2336] pb-4">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-base sm:text-lg font-bold text-white font-mono tracking-tight">{selectedReport.transaction_id}</h2>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#090d15] text-slate-300 border border-[#1b253b] truncate max-w-[200px]">
-                        {selectedReport.report_id}
-                      </span>
+                      
+                      {/* Copy TX ID Button */}
+                      <button
+                        onClick={() => copyToClipboard(selectedReport.transaction_id, "tx")}
+                        title="Copy transaction ID"
+                        className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-[#131b2b] hover:bg-[#1a253c] text-blue-300 border border-[#22314e] transition active:scale-[0.96]"
+                      >
+                        {copiedField === "tx" ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-300">Copied TX</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-slate-400" />
+                            <span>Copy TX</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Copy Report ID Button */}
+                      <button
+                        onClick={() => copyToClipboard(selectedReport.report_id, "rep")}
+                        title="Copy report ID"
+                        className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-[#090d15] hover:bg-[#121927] text-slate-300 border border-[#1b253b] transition truncate max-w-[200px] active:scale-[0.96]"
+                      >
+                        {copiedField === "rep" ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-300">Copied ID</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-slate-500" />
+                            <span className="truncate">{selectedReport.report_id}</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed font-sans">{selectedReport.summary}</p>
                     {selectedReport.model_id && (
@@ -431,7 +627,7 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1a2234]">
+                  <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1a2234]">
                     <button
                       onClick={() => setShowRawJsonModal(true)}
                       className="px-2.5 py-1.5 rounded-lg bg-[#121927] hover:bg-[#182133] text-xs font-mono text-slate-300 border border-[#1f2a40] flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98]"
@@ -440,11 +636,9 @@ export default function Dashboard() {
                       Audit Raw JSON
                     </button>
 
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-[10px] font-mono text-slate-400 font-medium">Confidence Score</div>
-                      <div className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-white">
-                        {selectedReport.confidence_score}%
-                      </div>
+                    {/* Animated SVG Radial Risk Speedometer */}
+                    <div className="flex-shrink-0 flex items-center justify-center">
+                      <RiskSpeedometer score={selectedReport.confidence_score} />
                     </div>
                   </div>
                 </div>
@@ -497,6 +691,62 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+
+              {/* Interactive Sub-tab Bar */}
+              <div className="flex items-center gap-1.5 p-1 bg-[#090d15] border border-[#1c2438] rounded-xl text-xs font-mono shadow-terminal-sm overflow-x-auto scrollbar-none">
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setDetailSubTab("findings");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98] ${
+                    detailSubTab === "findings"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#131b2c]"
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Findings &amp; Evidence</span>
+                </button>
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setDetailSubTab("pipeline");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98] ${
+                    detailSubTab === "pipeline"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#131b2c]"
+                  }`}
+                >
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>Execution Pipeline</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#090e18] text-blue-300 border border-[#1a2844]">
+                    5-Stage
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setDetailSubTab("simulator");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98] ${
+                    detailSubTab === "simulator"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#131b2c]"
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>What-If Sandbox</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-950/60 text-purple-300 border border-purple-800">
+                    Live
+                  </span>
+                </button>
+              </div>
+
+              {/* Sub-tab 1: Findings & Evidence */}
+              {detailSubTab === "findings" && (
+                <>
 
               {/* Specialist Agents Grid: Agent 1 & Agent 2 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -688,6 +938,27 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+              </>
+              )}
+
+              {/* Sub-tab 2: Execution Pipeline Stepper */}
+              {detailSubTab === "pipeline" && (
+                <PipelineStepper report={selectedReport} />
+              )}
+
+              {/* Sub-tab 3: What-If Risk Simulator Sandbox */}
+              {detailSubTab === "simulator" && (
+                <WhatIfRiskSimulator
+                  baseScore={selectedReport.confidence_score}
+                  detectedPatterns={selectedReport.detected_patterns}
+                  customerContext={selectedReport.customer_context}
+                  onApplyHypothesis={(notes) => {
+                    setAnalystNotes((prev) => (prev ? prev + "\n" : "") + notes);
+                    setDetailSubTab("findings");
+                    soundManager.playSuccessChime();
+                  }}
+                />
+              )}
 
               {/* Human Checkpoint Action Bar (Layer 3 Oversight) */}
               <div className="bg-[#0e131f] border border-[#23304c] rounded-xl p-5 shadow-terminal space-y-4 relative overflow-hidden">
@@ -758,6 +1029,13 @@ export default function Dashboard() {
                   </div>
                 )}
 
+                {actionErrorMessage && (
+                  <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-700/80 text-xs font-mono text-rose-200 flex items-center gap-2 shadow-terminal-sm">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                    <span>{actionErrorMessage}</span>
+                  </div>
+                )}
+
                 {/* Analyst Decision History if already closed */}
                 {selectedReport.pipeline_status === "Closed" ? (
                   <div className="p-4 rounded-lg bg-[#090d15] border border-[#1b253b] space-y-3">
@@ -811,7 +1089,7 @@ export default function Dashboard() {
                       <textarea
                         value={analystNotes}
                         onChange={(e) => setAnalystNotes(e.target.value)}
-                        placeholder="Enter corroborated rationale before finalizing case..."
+                        placeholder="Enter corroborated rationale before finalizing case (or use What-If sandbox to auto-fill)..."
                         className="w-full bg-[#090d15] border border-[#1c2538] rounded-lg p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
                         rows={2}
                       />
@@ -823,10 +1101,13 @@ export default function Dashboard() {
                         onClick={() => handleDecision("Approved-Fraud")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition min-h-[44px] active:scale-[0.98]"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition min-h-[44px] active:scale-[0.98] group"
                       >
                         <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                         <span>Confirm Fraud</span>
+                        <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-mono text-rose-200 bg-rose-900/60 rounded border border-rose-500/50">
+                          1
+                        </kbd>
                       </button>
 
                       {/* Button 2: Mark False Positive */}
@@ -834,10 +1115,13 @@ export default function Dashboard() {
                         onClick={() => handleDecision("False-Positive")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition min-h-[44px] active:scale-[0.98]"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition min-h-[44px] active:scale-[0.98] group"
                       >
                         <ShieldCheck className="w-4 h-4 flex-shrink-0" />
                         <span>Clear Suspicion</span>
+                        <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-mono text-emerald-200 bg-emerald-900/60 rounded border border-emerald-500/50">
+                          2
+                        </kbd>
                       </button>
 
                       {/* Button 3: Escalate for Manual Review */}
@@ -845,10 +1129,13 @@ export default function Dashboard() {
                         onClick={() => handleDecision("Escalated")}
                         disabled={submitting || !analyst}
                         title={!analyst ? "Sign in as an analyst to enable" : undefined}
-                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-4 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition min-h-[44px] active:scale-[0.98]"
+                        className="w-full sm:flex-1 py-3 sm:py-2.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition min-h-[44px] active:scale-[0.98] group"
                       >
                         <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                         <span>Escalate to SAR</span>
+                        <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-mono text-amber-200 bg-amber-900/60 rounded border border-amber-500/50">
+                          3
+                        </kbd>
                       </button>
                     </div>
                   </div>
@@ -893,6 +1180,12 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Keyboard Shortcuts Cheat Sheet Modal */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
     </div>
   );
 }
