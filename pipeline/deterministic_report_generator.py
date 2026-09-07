@@ -75,15 +75,25 @@ def build_deterministic_investigation_report(
     agent1_output: Optional[Dict[str, Any]],
     agent2_output: Optional[Dict[str, Any]],
     agent3_output: Optional[Dict[str, Any]],
-    error_message: Optional[str] = None
+    error_message: Optional[str] = None,
+    model_provider: Optional[str] = None,
+    model_id: Optional[str] = None,
+    pipeline_version: Optional[str] = None,
+    prompt_version: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Assembles the final audit-ready Investigation Report object.
-    
+
     If any agent failed, crashed, or returned a malformed response,
     this function enforces Chapter 8.1 error classification:
     classify as non-retryable escalate-type failure and set status to
     'Agent Error - Manual Review Required' instead of guessing or retrying.
+
+    model_provider/model_id/pipeline_version/prompt_version are recorded on
+    every report (success or error) so a verdict from months ago is
+    reproducible: which model produced it, and against which version of the
+    prompts and this pipeline. Callers that don't pass them (e.g. direct unit
+    tests) get None, which is itself an honest signal - "provenance unknown".
     """
     now_iso = datetime.now(timezone.utc).isoformat()
     report_id = f"REP-{transaction_id}-{int(datetime.now(timezone.utc).timestamp())}"
@@ -132,6 +142,10 @@ def build_deterministic_investigation_report(
             "analyst_notes": None,
             "closed_by": None,
             "closed_at": None,
+            "model_provider": model_provider,
+            "model_id": model_id,
+            "pipeline_version": pipeline_version,
+            "prompt_version": prompt_version,
             "created_at": now_iso
         }
 
@@ -166,5 +180,9 @@ def build_deterministic_investigation_report(
         "analyst_notes": None,
         "closed_by": None,
         "closed_at": None,
+        "model_provider": model_provider,
+        "model_id": model_id,
+        "pipeline_version": pipeline_version,
+        "prompt_version": prompt_version,
         "created_at": now_iso
     }

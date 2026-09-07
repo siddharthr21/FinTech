@@ -209,6 +209,57 @@ The platform features an authenticated analyst gateway and immutable decision at
 - **Next.js & Vercel:** Analyst-facing incident review dashboard featuring queue ranking, evidence checklists, raw audit views, and human checkpoint action buttons.
 - **Deterministic Action Guardrail:** Python module ([`pipeline/deterministic_report_generator.py`](./pipeline/deterministic_report_generator.py)) assembling audit reports without LLM generation.
 - **Standalone Pipeline Runner:** Python engine ([`pipeline/pipeline_runner.py`](./pipeline/pipeline_runner.py)) running the agents against any OpenAI-compatible provider (`--live`) or against recorded reference outputs (`--offline`), sharing the same deterministic guardrail as the Make.com scenario.
+- **Data Access Layer:** [`pipeline/datasource.py`](./pipeline/datasource.py) — a `DataSource`/`ReportSink` interface with local-JSON and live-Airtable implementations of each, selectable via `--source`. This is the seam a real deployment swaps for a bank's core banking system; see [Deployment Mapping](#deployment-mapping-from-prototype-to-bank-production) below.
+
+---
+
+## Deployment Mapping: From Prototype to Bank Production
+
+A fair question a judge (or a bank) will ask: **"This runs on Airtable and Make.com — how does it actually connect to our systems?"** The honest answer is that Airtable and Make.com were never meant to be the destination. They stand in for two things every bank already has, so this section maps each piece of the prototype to what replaces it in a real deployment — and says plainly which parts of that mapping are already real code versus still integration work ahead.
+
+### The core distinction
+
+Right now this system *is* its own database (Airtable) and *is* its own trigger (Make.com watching Airtable for `{flagged}=1`). A bank already runs both of those — a core banking system (CBS) holding the real `Customers`/`Transactions`/`Customer_History`/`Support_Tickets` data, and a fast, cheap rules engine that decides which transactions are worth a closer look before anything reaches an LLM. Deploying this project into a bank is not "migrate our data into Airtable" — it's "point the same three agents and the same guardrail at the bank's existing pipeline instead."
+
+### Layer-by-layer
+
+| Layer | In this prototype | In a bank deployment | Status |
+|---|---|---|---|
+| **1. Core banking system** | `data/seed_data.json` or the Airtable `Customers`/`Transactions`/`Customer_History`/`Support_Tickets` tables | The bank's own CBS (Oracle FLEXCUBE, Finacle, a custom system) — untouched, read via a **read-only replica or view**, never a direct connection to production write tables | Not applicable — this is the bank's existing infrastructure |
+| **2. Case triggering** | Make.com's `watchRecords` polling `{flagged}=1`, or `pipeline_runner.py --source airtable` pulling the identical filter on demand | The bank's existing fraud rules engine (velocity limits, blacklists, amount thresholds) flags the small subset of transactions worth agent-level investigation — this project's agents were never meant to run on 100% of traffic | Architecture decision, not code — the two-tier funnel is already implicit in how `flagged` works today |
+| **3. Data access layer** | [`pipeline/datasource.py`](./pipeline/datasource.py) — a `DataSource` interface with two real implementations, `LocalJSONDataSource` and `AirtableDataSource` | A bank implements a third `DataSource` subclass against their read-only replica. The three agents, the fusion logic, and the deterministic guardrail in `pipeline_runner.py` do not change — only this one file does | **Built.** This is the actual swap point, not a diagram — see below |
+| **4. Agent pipeline** | Three Claude/Groq/etc. prompts in [`agents/prompts.py`](./agents/prompts.py), called via [`agents/llm.py`](./agents/llm.py) | The same three agents, containerized inside the bank's VPC or on-prem environment rather than calling a public API — `.env.example`'s Ollama option (`LLM_BASE_URL=http://localhost:11434/v1`) is exactly this: a locally-hosted model needing no external call at all | Built for the "any OpenAI-compatible endpoint" part; a bank's actual on-prem container deployment is infrastructure work outside this repo's scope |
+| **5. Action-level guardrail** | [`pipeline/deterministic_report_generator.py`](./pipeline/deterministic_report_generator.py) — plain Python, zero LLM calls, strict schema validation | Unchanged. This is the strongest regulatory argument in the whole project: banks cannot put a raw LLM directly in a decision path, they need a deterministic check on its output before it becomes an audit record. This project already has one | **Built**, and arguably the single most bank-relevant piece here |
+| **6. Case management / audit store** | Airtable's `Investigation_Reports` table | The bank's existing compliance/case-management system (most already have one; Airtable was only ever a convenient stand-in with a REST API) | The `ReportSink` interface in `pipeline/datasource.py` is the same kind of seam as `DataSource` — a bank adds their own sink alongside `AirtableReportSink`, it doesn't replace the pattern |
+| **7. Model/decision provenance** | `model_provider`, `model_id`, `pipeline_version`, `prompt_version` stamped on every report by `build_deterministic_investigation_report()` | Unchanged — this is exactly what a regulator asking "why did the system decide this, and can you reproduce it" needs | **Built** |
+| **8. Analyst identity** | [`lib/auth.ts`](./lib/auth.ts)'s signed-session roster | The bank's existing SSO / Active Directory, so `closed_by` ties back to a real employee record instead of a hardcoded demo roster | Not built — the current auth is a real signed-session mechanism, but the identity source is a fixed demo list, not SSO |
+| **9. Analyst dashboard** | This Next.js app | The same app. Its structure and UX don't need to change for a bank deployment | Built, as-is |
+
+### What "the data access layer is built" actually proves
+
+`pipeline/datasource.py` isn't a diagram — it's two working implementations of the same interface, verified against a live external system in this repo:
+
+```bash
+# Same agents, same guardrail, data read from a bundled JSON fixture:
+python pipeline/pipeline_runner.py --offline --source local
+
+# Same agents, same guardrail, data read live from Airtable instead -
+# this is the "swap the data source" story made concrete:
+python pipeline/pipeline_runner.py --offline --source airtable
+```
+
+Both produce identical, correct output from the same code path. A bank integration adds a third `DataSource` subclass reading from their replica — the seam is exactly this size, not larger. (One honest limitation surfaced while building this: the demo's `Transactions` table has only one row per customer, so `get_recent_transactions()` returns nothing to compute a baseline from via the Airtable source, unlike the JSON fixture's separately curated history list. A real bank's CBS would have genuine transaction history here — this is a demo-data gap, not an architectural one.)
+
+### What this does *not* solve, on purpose
+
+Building a Kafka consumer, a tokenization vault, an SSO integration, or an on-prem container config would all be untestable in this environment and would not make the demo more convincing — they'd be code nobody could run. Two things worth calling out explicitly instead of glossing over:
+
+- **PII currently reaches the LLM in the clear.** Agent 2's payload includes the full customer record (name, home location) and Agent 1's includes IP address and device ID. For a real deployment this needs a redaction/tokenization step between the `DataSource` and the agent calls, before it ever leaves the bank's perimeter. Not built yet — flagged here rather than implied to be handled.
+- **The rules-engine funnel is assumed, not implemented.** This project starts from "a transaction is already flagged." The actual decision of *which* transactions deserve agent-level investigation is a bank's existing rules engine, and reproducing that here would be reproducing infrastructure a bank already has and doesn't need from a hackathon prototype.
+
+### The pitch this section is trying to earn
+
+This stack is a **reference implementation** proving the agent architecture and guardrail pattern work — not a claim that Airtable and Make.com are what a bank would run in production. The hard, reusable part is the three-agent fusion logic, the deterministic guardrail, and now a genuine data-access seam with two working implementations behind it. Swapping in a bank's real CBS is integration engineering against that seam, not a redesign of the system underneath it.
 
 ---
 
@@ -262,6 +313,10 @@ python pipeline/pipeline_runner.py --offline
 # Live agents - copy .env.example to .env and set LLM_API_KEY first
 python pipeline/pipeline_runner.py --live
 
+# Read the case data from live Airtable instead of the bundled JSON fixture -
+# processes the identical {flagged}=1 set Make.com's trigger watches
+python pipeline/pipeline_runner.py --source airtable
+
 # Guardrail self-checks (Ch.8.1 error classification + benchmark scores)
 python pipeline/test_pipeline.py
 ```
@@ -270,7 +325,11 @@ With no flag, the runner goes live when an LLM provider is configured and falls 
 offline otherwise. Free providers (Groq, Google AI Studio, Cerebras, OpenRouter, local
 Ollama) and their `LLM_BASE_URL` / `LLM_MODEL` values are listed in
 [`.env.example`](./.env.example); switching provider is two environment variables, not a
-code change.
+code change. `--source` (`local` default, or `airtable`) controls where
+Customers/Transactions/Customer_History/Support_Tickets are read from - see
+[`pipeline/datasource.py`](./pipeline/datasource.py) and the
+[Deployment Mapping](#deployment-mapping-from-prototype-to-bank-production) section below
+for why that seam exists.
 
 In live mode the Ch.8.1 guardrail stops being a simulation: an unreachable provider, a
 truncated reply, or a model that emits prose instead of schema-valid JSON all produce

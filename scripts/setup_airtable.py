@@ -172,7 +172,14 @@ TABLE_DEFINITIONS = [
                         {"name": "Closed"}
                     ]
                 }
-            }
+            },
+            # Provenance (Ch.9.4 Runtime Monitoring extension): which model and
+            # which version of the pipeline/prompts produced this verdict, so
+            # it's reproducible against the exact code that made it months later.
+            {"name": "model_provider", "type": "singleLineText"},
+            {"name": "model_id", "type": "singleLineText"},
+            {"name": "pipeline_version", "type": "singleLineText"},
+            {"name": "prompt_version", "type": "singleLineText"}
         ]
     }
 ]
@@ -197,11 +204,33 @@ def get_existing_tables(base_id: str) -> List[str]:
     resp = make_airtable_request(url)
     return [t["name"] for t in resp.get("tables", [])]
 
+def get_existing_tables_with_fields(base_id: str) -> Dict[str, Dict[str, Any]]:
+    """{table_name: {"id": tableId, "fields": [field_name, ...]}} - used to add
+    missing columns to an already-provisioned table without touching existing data."""
+    url = f"https://api.airtable.com/v0/meta/bases/{base_id}/tables"
+    resp = make_airtable_request(url)
+    return {
+        t["name"]: {"id": t["id"], "fields": [f["name"] for f in t["fields"]]}
+        for t in resp.get("tables", [])
+    }
+
 def create_table(base_id: str, table_def: Dict[str, Any]):
     url = f"https://api.airtable.com/v0/meta/bases/{base_id}/tables"
     print(f"Creating table '{table_def['name']}'...")
     make_airtable_request(url, method="POST", payload=table_def)
     print(f"[OK] Table '{table_def['name']}' created.")
+
+def ensure_fields(base_id: str, table_id: str, table_name: str, field_defs: List[Dict[str, Any]], existing_field_names: List[str]):
+    """Idempotent: adds any field in field_defs missing from existing_field_names.
+    Never removes or modifies an existing field - safe to run repeatedly against
+    a live base that already has data in it."""
+    for fd in field_defs:
+        if fd["name"] in existing_field_names:
+            continue
+        url = f"https://api.airtable.com/v0/meta/bases/{base_id}/tables/{table_id}/fields"
+        print(f"Adding field '{fd['name']}' to '{table_name}'...")
+        make_airtable_request(url, method="POST", payload=fd)
+        print(f"[OK] Field '{fd['name']}' added to '{table_name}'.")
 
 def get_record_count(base_id: str, table_name: str) -> int:
     try:
@@ -308,6 +337,18 @@ def main():
                 create_table(AIRTABLE_BASE_ID, t_def)
             else:
                 print(f"Table '{t_def['name']}' already exists.")
+
+        # Re-fetch (a table just created above won't be in the earlier
+        # name-only listing) and add any field defined above but missing from
+        # a table that already existed - e.g. provenance columns added to
+        # Investigation_Reports after the base was first provisioned.
+        print("\nChecking for missing fields on existing tables...")
+        existing_with_fields = get_existing_tables_with_fields(AIRTABLE_BASE_ID)
+        for t_def in TABLE_DEFINITIONS:
+            info = existing_with_fields.get(t_def["name"])
+            if not info:
+                continue
+            ensure_fields(AIRTABLE_BASE_ID, info["id"], t_def["name"], t_def["fields"], info["fields"])
 
         print("\nPopulating benchmark seed data...")
         populate_seed_data(AIRTABLE_BASE_ID)

@@ -86,6 +86,10 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         analyst_notes: fields.analyst_notes || null,
         closed_by: fields.closed_by || null,
         closed_at: fields.closed_at || null,
+        model_provider: fields.model_provider || null,
+        model_id: fields.model_id || null,
+        pipeline_version: fields.pipeline_version || null,
+        prompt_version: fields.prompt_version || null,
         created_at: fields.created_at || new Date().toISOString(),
       };
     });

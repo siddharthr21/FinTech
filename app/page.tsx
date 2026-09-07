@@ -424,6 +424,11 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed font-sans">{selectedReport.summary}</p>
+                    {selectedReport.model_id && (
+                      <p className="text-[10px] text-slate-500 mt-1 font-mono truncate" title="Model, pipeline, and prompt version that produced this verdict">
+                        {selectedReport.model_provider}/{selectedReport.model_id} &middot; pipeline v{selectedReport.pipeline_version} &middot; prompts v{selectedReport.prompt_version}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1a2234]">

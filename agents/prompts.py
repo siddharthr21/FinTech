@@ -3,6 +3,12 @@ System prompts and schemas for the Multi-Agent Fraud Investigation Copilot.
 Directly adheres to 'The Agentic AI Handbook' (Comed Kares Innovation Hub / ERA Foundation, 2026).
 """
 
+# Bump by hand whenever any of the three prompts below change. Stamped onto
+# every report (see build_deterministic_investigation_report) so a verdict
+# from months ago can be traced back to the exact prompt text that produced
+# it - required for a regulator asking "why did the system decide this".
+PROMPT_VERSION = "1.0.0"
+
 AGENT_1_SYSTEM_PROMPT = """You are the Transaction-Pattern Agent inside a multi-agent fraud
 investigation system. Analyze the target transaction against the
 customer's recent transaction history and flag statistical/behavioral

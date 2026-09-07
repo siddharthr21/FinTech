@@ -55,6 +55,30 @@ def is_configured() -> bool:
     return bool(get_api_key()) or "localhost" in base_url or "127.0.0.1" in base_url
 
 
+_PROVIDER_HOSTS = (
+    ("groq.com", "groq"),
+    ("cerebras.ai", "cerebras"),
+    ("openrouter.ai", "openrouter"),
+    ("generativelanguage.googleapis.com", "google-ai-studio"),
+    ("localhost", "ollama"),
+    ("127.0.0.1", "ollama"),
+)
+
+
+def current_model_label() -> tuple:
+    """(provider, model) for whichever LLM_BASE_URL/LLM_MODEL are active.
+
+    Stamped onto every live-mode report as model_provider/model_id so a
+    verdict can be traced back to exactly which model produced it - the
+    provider guess is cosmetic (for a human reading the audit trail), the
+    model id is the load-bearing part.
+    """
+    base_url = os.environ.get("LLM_BASE_URL", DEFAULT_BASE_URL)
+    model = os.environ.get("LLM_MODEL", DEFAULT_MODEL)
+    provider = next((name for host, name in _PROVIDER_HOSTS if host in base_url), "custom")
+    return provider, model
+
+
 def _strip_code_fence(text: str) -> str:
     """Models ignore 'no markdown' often enough to be worth handling."""
     text = text.strip()

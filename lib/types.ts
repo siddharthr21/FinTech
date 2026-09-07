@@ -47,6 +47,14 @@ export interface InvestigationReport {
   analyst_notes: string | null;
   closed_by?: string | null;
   closed_at?: string | null;
+  // Provenance: which model, and which version of the prompts/pipeline,
+  // produced this verdict. Only populated by the Python pipeline_runner.py
+  // path (see pipeline/deterministic_report_generator.py) - a report the
+  // Make.com scenario wrote directly will have these as null.
+  model_provider?: string | null;
+  model_id?: string | null;
+  pipeline_version?: string | null;
+  prompt_version?: string | null;
   created_at: string;
 }
 

@@ -92,13 +92,28 @@ def test_benchmark_cases_match_documented_scores():
         data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
     )
     expected = {"TX-98214": (94, "Likely Fraud"), "TX-98215": (38, "Likely Legitimate"), "TX-98217": (68, "Needs Review")}
-    for tx in pipeline.data["transactions"]:
-        if not tx.get("flagged"):
-            continue
+    for tx in pipeline.datasource.get_flagged_transactions():
         rep = pipeline.process_transaction(tx)
         score, verdict = expected[tx["transaction_id"]]
         assert rep["confidence_score"] == score, (tx["transaction_id"], rep["confidence_score"])
         assert rep["verdict"] == verdict, (tx["transaction_id"], rep["verdict"])
+
+
+def test_reports_carry_provenance():
+    """A verdict must be traceable to the model/prompt/pipeline version that produced it."""
+    rep = build()
+    assert rep["model_provider"] is None  # build() doesn't pass provenance - None is honest, not a crash
+    assert rep["pipeline_version"] is None
+
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    tx = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-98214")
+    rep = pipeline.process_transaction(tx)
+    assert rep["model_provider"] == "offline"
+    assert rep["model_id"] == "deterministic-fixture-v1"
+    assert rep["pipeline_version"]
+    assert rep["prompt_version"]
 
 
 if __name__ == "__main__":
