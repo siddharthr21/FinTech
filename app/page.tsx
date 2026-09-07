@@ -7,6 +7,8 @@ import AnalystSignIn from "@/components/AnalystSignIn";
 import RiskSpeedometer from "@/components/RiskSpeedometer";
 import WhatIfRiskSimulator from "@/components/WhatIfRiskSimulator";
 import PipelineStepper from "@/components/PipelineStepper";
+import NetworkRingGraph from "@/components/NetworkRingGraph";
+import InvestigationTimeline from "@/components/InvestigationTimeline";
 import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
 import { soundManager } from "@/lib/sound";
 import {
@@ -35,6 +37,7 @@ import {
   Sliders,
   Cpu,
   Keyboard,
+  Share2,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -53,7 +56,7 @@ export default function Dashboard() {
   const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [detailSubTab, setDetailSubTab] = useState<"findings" | "pipeline" | "simulator">("findings");
+  const [detailSubTab, setDetailSubTab] = useState<"findings" | "pipeline" | "simulator" | "network" | "timeline">("findings");
   const [loadError, setLoadError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -518,6 +521,12 @@ export default function Dashboard() {
                             )}
                           </span>
                         )}
+                        {report.ring_score != null && report.ring_score >= 50 && (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800 text-[10px] font-mono flex items-center gap-1">
+                            <Share2 className="w-2.5 h-2.5" />
+                            <span>Ring {report.ring_score}%</span>
+                          </span>
+                        )}
                       </div>
 
                       <p className="text-xs text-slate-400 line-clamp-1 leading-snug font-sans">
@@ -742,6 +751,50 @@ export default function Dashboard() {
                     Live
                   </span>
                 </button>
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setDetailSubTab("network");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98] ${
+                    detailSubTab === "network"
+                      ? "bg-rose-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#131b2c]"
+                  }`}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Network & Ring</span>
+                  {selectedReport.ring_score !== undefined && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded border font-mono ${
+                        (selectedReport.ring_score || 0) >= 0.7
+                          ? "bg-rose-950/80 text-rose-300 border-rose-700 font-bold"
+                          : (selectedReport.ring_score || 0) >= 0.4
+                          ? "bg-amber-950/80 text-amber-300 border-amber-700"
+                          : "bg-[#090e18] text-slate-400 border-slate-700"
+                      }`}
+                    >
+                      {Math.round((selectedReport.ring_score || 0) * 100)}%
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setDetailSubTab("timeline");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition flex-shrink-0 active:scale-[0.98] ${
+                    detailSubTab === "timeline"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#131b2c]"
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Timeline</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800">
+                    Forensic
+                  </span>
+                </button>
               </div>
 
               {/* Sub-tab 1: Findings & Evidence */}
@@ -958,6 +1011,20 @@ export default function Dashboard() {
                     soundManager.playSuccessChime();
                   }}
                 />
+              )}
+
+              {/* Sub-tab 4: Fraud Ring & Network Graph */}
+              {detailSubTab === "network" && (
+                <NetworkRingGraph
+                  ringAnalysis={selectedReport.network_findings}
+                  ringScore={selectedReport.ring_score}
+                  transactionId={selectedReport.transaction_id}
+                />
+              )}
+
+              {/* Sub-tab 5: Forensic Investigation Timeline */}
+              {detailSubTab === "timeline" && (
+                <InvestigationTimeline report={selectedReport} />
               )}
 
               {/* Human Checkpoint Action Bar (Layer 3 Oversight) */}

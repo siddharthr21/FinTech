@@ -66,6 +66,18 @@ class DataSource(ABC):
     def get_support_tickets(self, customer_id: str) -> List[Dict[str, Any]]:
         ...
 
+    @abstractmethod
+    def get_all_transactions(self) -> List[Dict[str, Any]]:
+        ...
+
+    @abstractmethod
+    def get_all_customers(self) -> List[Dict[str, Any]]:
+        ...
+
+    @abstractmethod
+    def get_all_customer_history(self) -> List[Dict[str, Any]]:
+        ...
+
 
 class ReportSink(ABC):
     """Where a finished Investigation Report is delivered, beyond the local
@@ -111,6 +123,15 @@ class LocalJSONDataSource(DataSource):
 
     def get_support_tickets(self, customer_id: str) -> List[Dict[str, Any]]:
         return [t for t in self.data.get("support_tickets", []) if t["customer_id"] == customer_id]
+
+    def get_all_transactions(self) -> List[Dict[str, Any]]:
+        return self.data.get("transactions", [])
+
+    def get_all_customers(self) -> List[Dict[str, Any]]:
+        return self.data.get("customers", [])
+
+    def get_all_customer_history(self) -> List[Dict[str, Any]]:
+        return self.data.get("customer_history", [])
 
 
 class AirtableDataSource(DataSource):
@@ -165,6 +186,15 @@ class AirtableDataSource(DataSource):
     def get_support_tickets(self, customer_id: str) -> List[Dict[str, Any]]:
         recs = self._records("Support_Tickets", f"{{customer_id}}='{_escape_formula_value(customer_id)}'")
         return [r["fields"] for r in recs]
+
+    def get_all_transactions(self) -> List[Dict[str, Any]]:
+        return [r["fields"] for r in self._records("Transactions")]
+
+    def get_all_customers(self) -> List[Dict[str, Any]]:
+        return [r["fields"] for r in self._records("Customers")]
+
+    def get_all_customer_history(self) -> List[Dict[str, Any]]:
+        return [r["fields"] for r in self._records("Customer_History")]
 
 
 class AirtableReportSink(ReportSink):

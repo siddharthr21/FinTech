@@ -66,6 +66,11 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         customer_context = a2.findings || [];
       } catch (e) {}
 
+      let network_findings = null;
+      try {
+        network_findings = typeof fields.network_findings === "string" ? JSON.parse(fields.network_findings) : (fields.network_findings || null);
+      } catch (e) {}
+
       return {
         id: r.id,
         report_id: fields.report_id,
@@ -75,6 +80,8 @@ export async function getInvestigationReports(): Promise<InvestigationReport[]> 
         verdict: fields.verdict || "Needs Review",
         detected_patterns,
         customer_context,
+        ring_score: fields.ring_score ?? null,
+        network_findings,
         fused_reasoning: fields.fused_reasoning || "",
         evidence_trail,
         recommended_action: fields.recommended_action || "Escalate for Manual Review",

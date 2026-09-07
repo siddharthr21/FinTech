@@ -151,6 +151,68 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "avg_monthly_spend": 1420.00,
             "preferred_merchants": "CVS Pharmacy, Stop & Shop, Dunkin', MBTA",
             "risk_flag_count_lifetime": 2
+        },
+        # Fraud Ring Syndicate: 4 accounts opened in tight cluster sharing hardware & IPs
+        {
+            "customer_id": "CUST-70112",
+            "name": "Vikram Sethi",
+            "kyc_tier": "Tier 1",
+            "account_open_date": "2026-08-10",
+            "home_location": "Mumbai, MH, IND",
+            "avg_monthly_spend": 1800.00,
+            "preferred_merchants": "SwiftLayer Escrow, Wire Remittance",
+            "risk_flag_count_lifetime": 1
+        },
+        {
+            "customer_id": "CUST-70113",
+            "name": "Rajesh Nair",
+            "kyc_tier": "Tier 1",
+            "account_open_date": "2026-08-12",
+            "home_location": "Navi Mumbai, MH, IND",
+            "avg_monthly_spend": 1500.00,
+            "preferred_merchants": "Apex Vault Clearing, P2P Remit",
+            "risk_flag_count_lifetime": 1
+        },
+        {
+            "customer_id": "CUST-70114",
+            "name": "Ananya Roy",
+            "kyc_tier": "Tier 1",
+            "account_open_date": "2026-08-15",
+            "home_location": "Thane, MH, IND",
+            "avg_monthly_spend": 1600.00,
+            "preferred_merchants": "Offshore Ledger, Digital P2P",
+            "risk_flag_count_lifetime": 0
+        },
+        {
+            "customer_id": "CUST-70115",
+            "name": "Karan Malhotra",
+            "kyc_tier": "Tier 1",
+            "account_open_date": "2026-08-18",
+            "home_location": "Pune, MH, IND",
+            "avg_monthly_spend": 2100.00,
+            "preferred_merchants": "CryptoGate Direct, Remit Wire",
+            "risk_flag_count_lifetime": 1
+        },
+        # Benign Shared-Hardware Couple (Discrimination Control: shared tablet, distinct clean history)
+        {
+            "customer_id": "CUST-80101",
+            "name": "Priya Sharma",
+            "kyc_tier": "Tier 2",
+            "account_open_date": "2023-03-10",
+            "home_location": "Bangalore, KA, IND",
+            "avg_monthly_spend": 3200.00,
+            "preferred_merchants": "Amazon India, BigBasket, Starbucks",
+            "risk_flag_count_lifetime": 0
+        },
+        {
+            "customer_id": "CUST-80102",
+            "name": "Rohan Sharma",
+            "kyc_tier": "Tier 2",
+            "account_open_date": "2022-11-05",
+            "home_location": "Bangalore, KA, IND",
+            "avg_monthly_spend": 4100.00,
+            "preferred_merchants": "Myntra, Swiggy, Uber",
+            "risk_flag_count_lifetime": 0
         }
     ]
 
@@ -167,6 +229,7 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-UNK-9941",
             "ip_address": "185.220.101.44",
             "payment_method": "Virtual Visa ending 4109",
+            "counterparty_account": "ACC-APEX-ELEC",
             "status": "Completed",
             "flagged": True
         },
@@ -182,6 +245,7 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-KNOWN-7712",
             "ip_address": "12.180.45.10",
             "payment_method": "Apple Pay",
+            "counterparty_account": "ACC-DELTA-AIR",
             "status": "Completed",
             "flagged": True
         },
@@ -197,6 +261,7 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-KNOWN-3301",
             "ip_address": "73.155.88.22",
             "payment_method": "Physical Card Chip",
+            "counterparty_account": "ACC-WHOLEFOODS-TX",
             "status": "Completed",
             "flagged": False
         },
@@ -212,6 +277,7 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-KNOWN-5522",
             "ip_address": "98.220.14.77",
             "payment_method": "Debit Card",
+            "counterparty_account": "ACC-GLOBAL-REMIT",
             "status": "Completed",
             "flagged": True
         },
@@ -227,6 +293,7 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-KNOWN-8841",
             "ip_address": "68.211.90.12",
             "payment_method": "Contactless Visa",
+            "counterparty_account": "ACC-PUBLIX-ATL",
             "status": "Completed",
             "flagged": False
         },
@@ -241,6 +308,99 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-KNOWN-1290",
             "ip_address": "24.61.18.99",
             "payment_method": "Mobile Wallet",
+            "counterparty_account": "ACC-DUNKIN-BOS",
+            "status": "Completed",
+            "flagged": False
+        },
+        # Fraud Ring Case: Rapid Layering Chain across 4 accounts sharing DEV-RING-4417 & IPs (45.132.192.7 / 103.21.244.18)
+        {
+            "transaction_id": "TX-70001",
+            "customer_id": "CUST-70112",
+            "timestamp": "2026-09-06T06:00:00Z",
+            "amount": 4800.00,
+            "merchant": "SwiftLayer Escrow",
+            "merchant_category": "Money Transfer",
+            "location": "Mumbai, MH, IND",
+            "device_id": "DEV-RING-4417",
+            "ip_address": "45.132.192.7",
+            "payment_method": "Instant Wire",
+            "counterparty_account": "ACC-MULE-9011",
+            "status": "Completed",
+            "flagged": True
+        },
+        {
+            "transaction_id": "TX-70002",
+            "customer_id": "CUST-70113",
+            "timestamp": "2026-09-06T06:38:00Z",
+            "amount": 4550.00,
+            "merchant": "Apex Vault Clearing",
+            "merchant_category": "Money Transfer",
+            "location": "Mumbai, MH, IND",
+            "device_id": "DEV-RING-4417",
+            "ip_address": "45.132.192.7",
+            "payment_method": "Instant Wire",
+            "counterparty_account": "ACC-MULE-9011",
+            "status": "Completed",
+            "flagged": True
+        },
+        {
+            "transaction_id": "TX-70003",
+            "customer_id": "CUST-70114",
+            "timestamp": "2026-09-06T07:15:00Z",
+            "amount": 4300.00,
+            "merchant": "Offshore Ledger S.A.",
+            "merchant_category": "Money Transfer",
+            "location": "Mumbai, MH, IND",
+            "device_id": "DEV-RING-4417",
+            "ip_address": "103.21.244.18",
+            "payment_method": "Instant Wire",
+            "counterparty_account": "ACC-MULE-9011",
+            "status": "Completed",
+            "flagged": True
+        },
+        {
+            "transaction_id": "TX-70004",
+            "customer_id": "CUST-70115",
+            "timestamp": "2026-09-06T07:50:00Z",
+            "amount": 4100.00,
+            "merchant": "CryptoGate Direct",
+            "merchant_category": "Money Transfer",
+            "location": "Mumbai, MH, IND",
+            "device_id": "DEV-RING-4417",
+            "ip_address": "103.21.244.18",
+            "payment_method": "Instant Wire",
+            "counterparty_account": "ACC-MULE-9011",
+            "status": "Completed",
+            "flagged": True
+        },
+        # Benign Shared Tablet Control Transactions
+        {
+            "transaction_id": "TX-80001",
+            "customer_id": "CUST-80101",
+            "timestamp": "2026-09-06T10:00:00Z",
+            "amount": 65.00,
+            "merchant": "Amazon India",
+            "merchant_category": "Retail",
+            "location": "Bangalore, KA, IND",
+            "device_id": "DEV-SHARED-TABLET",
+            "ip_address": "106.51.72.10",
+            "payment_method": "UPI",
+            "counterparty_account": "ACC-AMAZON-RETAIL",
+            "status": "Completed",
+            "flagged": False
+        },
+        {
+            "transaction_id": "TX-80002",
+            "customer_id": "CUST-80102",
+            "timestamp": "2026-09-06T13:30:00Z",
+            "amount": 28.50,
+            "merchant": "Swiggy Delivery",
+            "merchant_category": "Food & Beverage",
+            "location": "Bangalore, KA, IND",
+            "device_id": "DEV-SHARED-TABLET",
+            "ip_address": "106.51.72.10",
+            "payment_method": "UPI",
+            "counterparty_account": "ACC-SWIGGY-FOOD",
             "status": "Completed",
             "flagged": False
         }
@@ -253,7 +413,9 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
         {"transaction_id": "TX-98004", "customer_id": "CUST-20811", "amount": 25.00, "merchant": "Uber", "merchant_category": "Transportation", "location": "San Francisco, CA, USA", "timestamp": "2026-09-04T09:10:00Z"},
         {"transaction_id": "TX-98005", "customer_id": "CUST-20811", "amount": 180.00, "merchant": "Blue Bottle Coffee Supply", "merchant_category": "Retail", "location": "San Francisco, CA, USA", "timestamp": "2026-09-05T11:30:00Z"},
         {"transaction_id": "TX-98006", "customer_id": "CUST-40115", "amount": 35.00, "merchant": "Walgreens", "merchant_category": "Pharmacy", "location": "Chicago, IL, USA", "timestamp": "2026-09-01T12:00:00Z"},
-        {"transaction_id": "TX-98007", "customer_id": "CUST-50228", "amount": 95.00, "merchant": "Home Depot", "merchant_category": "Home Improvement", "location": "Atlanta, GA, USA", "timestamp": "2026-09-02T16:00:00Z"}
+        {"transaction_id": "TX-98007", "customer_id": "CUST-50228", "amount": 95.00, "merchant": "Home Depot", "merchant_category": "Home Improvement", "location": "Atlanta, GA, USA", "timestamp": "2026-09-02T16:00:00Z"},
+        {"transaction_id": "TX-70000", "customer_id": "CUST-70112", "amount": 500.00, "merchant": "SwiftLayer Escrow", "merchant_category": "Money Transfer", "location": "Mumbai, MH, IND", "timestamp": "2026-09-05T12:00:00Z", "counterparty_account": "ACC-TEST-ESCROW"},
+        {"transaction_id": "TX-80000", "customer_id": "CUST-80101", "amount": 45.00, "merchant": "BigBasket", "merchant_category": "Grocery", "location": "Bangalore, KA, IND", "timestamp": "2026-09-05T09:00:00Z", "counterparty_account": "ACC-BB-GROCERY"}
     ]
 
     customer_history = [
@@ -319,6 +481,62 @@ def generate_benchmark_datasets() -> Dict[str, Any]:
             "device_id": "DEV-KNOWN-1290",
             "resolution": "Merchant Credit Issued",
             "notes": "Cardholder disputed unauthorized billing subscription ($14.99). Resolved by credit."
+        },
+        # Fraud Ring Syndicate Customer History (Cluster of logins on DEV-RING-4417)
+        {
+            "event_id": "EVT-7011",
+            "customer_id": "CUST-70112",
+            "event_type": "Login",
+            "event_timestamp": "2026-09-06T05:50:00Z",
+            "device_id": "DEV-RING-4417",
+            "resolution": "Success",
+            "notes": "Session established from hardware DEV-RING-4417 via VPN IP 45.132.192.7."
+        },
+        {
+            "event_id": "EVT-7012",
+            "customer_id": "CUST-70113",
+            "event_type": "Login",
+            "event_timestamp": "2026-09-06T06:30:00Z",
+            "device_id": "DEV-RING-4417",
+            "resolution": "Success",
+            "notes": "Rapid successive session on same hardware DEV-RING-4417 from IP 45.132.192.7."
+        },
+        {
+            "event_id": "EVT-7013",
+            "customer_id": "CUST-70114",
+            "event_type": "Login",
+            "event_timestamp": "2026-09-06T07:10:00Z",
+            "device_id": "DEV-RING-4417",
+            "resolution": "Success",
+            "notes": "Subsequent login on DEV-RING-4417 switching to proxy IP 103.21.244.18."
+        },
+        {
+            "event_id": "EVT-7014",
+            "customer_id": "CUST-70115",
+            "event_type": "Login",
+            "event_timestamp": "2026-09-06T07:45:00Z",
+            "device_id": "DEV-RING-4417",
+            "resolution": "Success",
+            "notes": "Fourth distinct customer transacting on DEV-RING-4417 within 2 hours."
+        },
+        # Benign Couple Customer History
+        {
+            "event_id": "EVT-8011",
+            "customer_id": "CUST-80101",
+            "event_type": "Login",
+            "event_timestamp": "2026-09-06T09:55:00Z",
+            "device_id": "DEV-SHARED-TABLET",
+            "resolution": "Success",
+            "notes": "Home tablet biometric login from primary residential broadband."
+        },
+        {
+            "event_id": "EVT-8012",
+            "customer_id": "CUST-80102",
+            "event_type": "Login",
+            "event_timestamp": "2026-09-06T13:25:00Z",
+            "device_id": "DEV-SHARED-TABLET",
+            "resolution": "Success",
+            "notes": "Spouse routine login on shared family tablet from residential IP."
         }
     ]
 
@@ -457,6 +675,10 @@ def main():
                 fields["analyst_decision"] = r.get("analyst_decision")
             if r.get("analyst_notes"):
                 fields["analyst_notes"] = r.get("analyst_notes")
+            if r.get("ring_score") is not None:
+                fields["ring_score"] = r.get("ring_score")
+            if r.get("network_findings"):
+                fields["network_findings"] = json.dumps(r.get("network_findings")) if isinstance(r.get("network_findings"), (dict, list)) else str(r.get("network_findings"))
 
             if r.get("report_id") not in existing_rep_records:
                 new_reports_to_upload.append(fields)

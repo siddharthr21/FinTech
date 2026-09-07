@@ -69,6 +69,7 @@ TABLE_DEFINITIONS = [
             {"name": "device_id", "type": "singleLineText"},
             {"name": "ip_address", "type": "singleLineText"},
             {"name": "payment_method", "type": "singleLineText"},
+            {"name": "counterparty_account", "type": "singleLineText"},
             {
                 "name": "status",
                 "type": "singleSelect",
@@ -179,7 +180,9 @@ TABLE_DEFINITIONS = [
             {"name": "model_provider", "type": "singleLineText"},
             {"name": "model_id", "type": "singleLineText"},
             {"name": "pipeline_version", "type": "singleLineText"},
-            {"name": "prompt_version", "type": "singleLineText"}
+            {"name": "prompt_version", "type": "singleLineText"},
+            {"name": "ring_score", "type": "number", "options": {"precision": 0}},
+            {"name": "network_findings", "type": "multilineText"}
         ]
     }
 ]

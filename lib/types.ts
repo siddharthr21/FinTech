@@ -27,6 +27,48 @@ export interface EvidenceTrailItem {
   weight: "high" | "medium" | "low";
 }
 
+export interface RingFinding {
+  signal_type: "shared_device" | "shared_ip" | "transfer_chain" | "fan_in_out" | "temporal_cluster" | "account_age_cluster";
+  severity: number;
+  explanation: string;
+  entities: string[];
+  evidence: Record<string, any>;
+}
+
+export interface NetworkGraphNode {
+  id: string;
+  label: string;
+  type: "customer" | "device" | "ip" | "account";
+  isFlagged?: boolean;
+}
+
+export interface NetworkGraphEdge {
+  source: string;
+  target: string;
+  relationship: string;
+}
+
+export interface RingAnalysisResult {
+  cluster_id: string;
+  target_transaction_id?: string;
+  target_customer_id?: string;
+  ring_score: number;
+  is_suspicious_ring: boolean;
+  signals_triggered: string[];
+  findings: RingFinding[];
+  entities: {
+    customers: string[];
+    devices: string[];
+    ips: string[];
+    counterparty_accounts: string[];
+  };
+  graph?: {
+    nodes: NetworkGraphNode[];
+    edges: NetworkGraphEdge[];
+  };
+  summary: string;
+}
+
 export interface InvestigationReport {
   id?: string; // Airtable internal record ID if present
   report_id: string;
@@ -36,6 +78,8 @@ export interface InvestigationReport {
   verdict: "Likely Fraud" | "Needs Review" | "Likely Legitimate";
   detected_patterns: PatternFinding[];
   customer_context: HistoryFinding[];
+  ring_score?: number | null;
+  network_findings?: RingAnalysisResult | null;
   fused_reasoning: string;
   evidence_trail: EvidenceTrailItem[];
   recommended_action: "Approve as Fraud" | "Mark False Positive" | "Escalate for Manual Review";

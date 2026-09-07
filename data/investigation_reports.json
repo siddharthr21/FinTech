@@ -1,281 +1,1509 @@
 [
   {
-    "report_id": "REP-TX-98214-1788758620",
+    "report_id": "REP-TX-98214-1788767378",
     "transaction_id": "TX-98214",
-    "summary": "Copilot assessed TX TX-98214 as 'Likely Fraud' (Confidence: 85%). Detected 2 pattern anomalies and 3 contextual history signals.",
-    "confidence_score": 85,
+    "summary": "Copilot assessed TX TX-98214 as 'Likely Fraud' (Confidence: 94%). Detected 3 pattern anomalies, 2 contextual history signals.",
+    "confidence_score": 94,
     "verdict": "Likely Fraud",
     "detected_patterns": [
       {
+        "anomaly_type": "geography",
+        "severity": 95,
+        "explanation": "Transaction location in Moscow, RU indicates impossible travel from Seattle baseline within 72 hours.",
+        "evidence": {
+          "source_field": "location",
+          "observed_value": "Moscow, RU",
+          "baseline_value": "Seattle, WA, USA"
+        }
+      },
+      {
         "anomaly_type": "amount",
-        "severity": 96,
-        "explanation": "Transaction amount far exceeds historical mean",
+        "severity": 90,
+        "explanation": "Transaction amount of $3850.00 is 45x greater than customer historical mean of $84.23.",
         "evidence": {
           "source_field": "amount",
-          "observed_value": "3850.0",
-          "baseline_value": "84.23"
+          "observed_value": "$3850.00",
+          "baseline_value": "Historical Mean: $84.23"
         }
       },
       {
         "anomaly_type": "merchant",
-        "severity": 82,
-        "explanation": "Merchant category unseen in customer's history and associated with high\u2011value fraud",
+        "severity": 80,
+        "explanation": "High-risk consumer electronics merchant category never previously utilized by this account.",
         "evidence": {
           "source_field": "merchant_category",
           "observed_value": "Consumer Electronics & High-End Tech",
-          "baseline_value": "No prior transactions in this category"
+          "baseline_value": "Groceries, Retail, Fuel"
         }
       }
     ],
     "customer_context": [
       {
         "signal_type": "credential_churn",
-        "severity": 70,
-        "explanation": "Password reset occurred within 48 hours before the high\u2011value transaction.",
+        "severity": 95,
+        "explanation": "Password reset and new unrecognized device (DEV-UNK-9941) registered within 36 hours prior to transaction.",
         "evidence": {
           "source_table": "Customer_History",
-          "source_record_id": "EVT-5011",
-          "observed_value": "Password_Reset at 2026-09-04T18:22:10Z"
-        }
-      },
-      {
-        "signal_type": "credential_churn",
-        "severity": 70,
-        "explanation": "New device was registered 26 hours prior to the transaction.",
-        "evidence": {
-          "source_table": "Customer_History",
-          "source_record_id": "EVT-5012",
-          "observed_value": "Device_Change at 2026-09-05T01:10:04Z"
+          "source_record_id": "EVT-5011 / EVT-5012",
+          "observed_value": "Password_Reset (2026-09-04T18:22:10Z) followed by Device_Change from foreign IP"
         }
       },
       {
         "signal_type": "complaint_signal",
-        "severity": 60,
-        "explanation": "Customer filed an unauthorized\u2011access support ticket shortly before the transaction.",
+        "severity": 90,
+        "explanation": "Customer opened high-priority support ticket reporting unauthorized password reset SMS alert.",
         "evidence": {
           "source_table": "Support_Tickets",
           "source_record_id": "TCK-8812",
-          "observed_value": "Unauthorized Access complaint"
+          "observed_value": "Customer reported: 'I received an SMS that my password was reset, but I did not do this.'"
         }
       }
     ],
-    "fused_reasoning": "The transaction exhibits a severe amount anomaly (severity 96) and an unseen high\u2011risk merchant category (severity 82). These pattern alerts line up temporally with credential churn signals\u2014a password reset 48\u202fhours earlier and a device change 26\u202fhours earlier\u2014providing strong corroboration of fraudulent intent.",
+    "ring_score": null,
+    "network_findings": null,
+    "fused_reasoning": "CORROBORATION BONUS APPLIED: High-value transaction in Moscow ($3,850.00) temporally aligns with an unauthorized password reset and device change (EVT-5011/EVT-5012) 26-36 hours prior, directly corroborated by customer support ticket TCK-8812 reporting unauthorized access. Classic textbook ATO fraud signature.",
     "evidence_trail": [
       {
-        "claim": "Transaction amount far exceeds typical spending",
+        "claim": "Impossible geographic travel to Moscow, RU with 45x historical spend surge",
         "source_agent": "transaction_pattern",
-        "source_field": "amount",
+        "source_field": "location / amount",
         "weight": "high"
       },
       {
-        "claim": "Merchant category is unseen and linked to high\u2011value fraud",
-        "source_agent": "transaction_pattern",
-        "source_field": "merchant_category",
-        "weight": "medium"
+        "claim": "Unrecognized password reset and device switch 26-36h prior to transaction",
+        "source_agent": "customer_history",
+        "source_field": "Customer_History.event_type",
+        "weight": "high"
       },
       {
-        "claim": "Password reset occurred shortly before the transaction",
+        "claim": "Customer explicit complaint regarding unauthorized password reset notification",
         "source_agent": "customer_history",
-        "source_field": "observed_value",
-        "weight": "medium"
-      },
-      {
-        "claim": "New device was registered shortly before the transaction",
-        "source_agent": "customer_history",
-        "source_field": "observed_value",
-        "weight": "medium"
-      },
-      {
-        "claim": "Customer filed an unauthorized\u2011access support ticket before the transaction",
-        "source_agent": "customer_history",
-        "source_field": "observed_value",
-        "weight": "low"
+        "source_field": "Support_Tickets.notes (TCK-8812)",
+        "weight": "high"
       }
     ],
     "recommended_action": "Approve as Fraud",
     "pipeline_status": "Pending Analyst Review",
-    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98214\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 96,\n      \"explanation\": \"Transaction amount far exceeds historical mean\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"3850.0\",\n        \"baseline_value\": \"84.23\"\n      }\n    },\n    {\n      \"anomaly_type\": \"merchant\",\n      \"severity\": 82,\n      \"explanation\": \"Merchant category unseen in customer's history and associated with high\\u2011value fraud\",\n      \"evidence\": {\n        \"source_field\": \"merchant_category\",\n        \"observed_value\": \"Consumer Electronics & High-End Tech\",\n        \"baseline_value\": \"No prior transactions in this category\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 90\n}",
-    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-10492\",\n  \"findings\": [\n    {\n      \"signal_type\": \"credential_churn\",\n      \"severity\": 70,\n      \"explanation\": \"Password reset occurred within 48 hours before the high\\u2011value transaction.\",\n      \"evidence\": {\n        \"source_table\": \"Customer_History\",\n        \"source_record_id\": \"EVT-5011\",\n        \"observed_value\": \"Password_Reset at 2026-09-04T18:22:10Z\"\n      }\n    },\n    {\n      \"signal_type\": \"credential_churn\",\n      \"severity\": 70,\n      \"explanation\": \"New device was registered 26 hours prior to the transaction.\",\n      \"evidence\": {\n        \"source_table\": \"Customer_History\",\n        \"source_record_id\": \"EVT-5012\",\n        \"observed_value\": \"Device_Change at 2026-09-05T01:10:04Z\"\n      }\n    },\n    {\n      \"signal_type\": \"complaint_signal\",\n      \"severity\": 60,\n      \"explanation\": \"Customer filed an unauthorized\\u2011access support ticket shortly before the transaction.\",\n      \"evidence\": {\n        \"source_table\": \"Support_Tickets\",\n        \"source_record_id\": \"TCK-8812\",\n        \"observed_value\": \"Unauthorized Access complaint\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 65\n}",
-    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98214\",\n  \"confidence_score\": 85,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"The transaction exhibits a severe amount anomaly (severity 96) and an unseen high\\u2011risk merchant category (severity 82). These pattern alerts line up temporally with credential churn signals\\u2014a password reset 48\\u202fhours earlier and a device change 26\\u202fhours earlier\\u2014providing strong corroboration of fraudulent intent.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Transaction amount far exceeds typical spending\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Merchant category is unseen and linked to high\\u2011value fraud\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"merchant_category\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"Password reset occurred shortly before the transaction\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"observed_value\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"New device was registered shortly before the transaction\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"observed_value\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"Customer filed an unauthorized\\u2011access support ticket before the transaction\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"observed_value\",\n      \"weight\": \"low\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98214\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"geography\",\n      \"severity\": 95,\n      \"explanation\": \"Transaction location in Moscow, RU indicates impossible travel from Seattle baseline within 72 hours.\",\n      \"evidence\": {\n        \"source_field\": \"location\",\n        \"observed_value\": \"Moscow, RU\",\n        \"baseline_value\": \"Seattle, WA, USA\"\n      }\n    },\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 90,\n      \"explanation\": \"Transaction amount of $3850.00 is 45x greater than customer historical mean of $84.23.\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"$3850.00\",\n        \"baseline_value\": \"Historical Mean: $84.23\"\n      }\n    },\n    {\n      \"anomaly_type\": \"merchant\",\n      \"severity\": 80,\n      \"explanation\": \"High-risk consumer electronics merchant category never previously utilized by this account.\",\n      \"evidence\": {\n        \"source_field\": \"merchant_category\",\n        \"observed_value\": \"Consumer Electronics & High-End Tech\",\n        \"baseline_value\": \"Groceries, Retail, Fuel\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 92\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-10492\",\n  \"findings\": [\n    {\n      \"signal_type\": \"credential_churn\",\n      \"severity\": 95,\n      \"explanation\": \"Password reset and new unrecognized device (DEV-UNK-9941) registered within 36 hours prior to transaction.\",\n      \"evidence\": {\n        \"source_table\": \"Customer_History\",\n        \"source_record_id\": \"EVT-5011 / EVT-5012\",\n        \"observed_value\": \"Password_Reset (2026-09-04T18:22:10Z) followed by Device_Change from foreign IP\"\n      }\n    },\n    {\n      \"signal_type\": \"complaint_signal\",\n      \"severity\": 90,\n      \"explanation\": \"Customer opened high-priority support ticket reporting unauthorized password reset SMS alert.\",\n      \"evidence\": {\n        \"source_table\": \"Support_Tickets\",\n        \"source_record_id\": \"TCK-8812\",\n        \"observed_value\": \"Customer reported: 'I received an SMS that my password was reset, but I did not do this.'\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 95\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98214\",\n  \"confidence_score\": 94,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"CORROBORATION BONUS APPLIED: High-value transaction in Moscow ($3,850.00) temporally aligns with an unauthorized password reset and device change (EVT-5011/EVT-5012) 26-36 hours prior, directly corroborated by customer support ticket TCK-8812 reporting unauthorized access. Classic textbook ATO fraud signature.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Impossible geographic travel to Moscow, RU with 45x historical spend surge\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"location / amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Unrecognized password reset and device switch 26-36h prior to transaction\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customer_History.event_type\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Customer explicit complaint regarding unauthorized password reset notification\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Support_Tickets.notes (TCK-8812)\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
     "analyst_decision": null,
     "analyst_notes": null,
     "closed_by": null,
     "closed_at": null,
-    "created_at": "2026-09-07T05:23:40.401794+00:00"
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:38.177155+00:00"
   },
   {
-    "report_id": "REP-TX-98215-1788758630",
+    "report_id": "REP-TX-98215-1788767381",
     "transaction_id": "TX-98215",
-    "summary": "Copilot assessed TX TX-98215 as 'Needs Review' (Confidence: 47%). Detected 2 pattern anomalies and 1 contextual history signal.",
-    "confidence_score": 47,
+    "summary": "Copilot assessed TX TX-98215 as 'Likely Legitimate' (Confidence: 38%). Detected 1 pattern anomaly, 0 contextual history signals.",
+    "confidence_score": 38,
+    "verdict": "Likely Legitimate",
+    "detected_patterns": [
+      {
+        "anomaly_type": "geography",
+        "severity": 45,
+        "explanation": "Transaction location New York, NY deviates from San Francisco home location.",
+        "evidence": {
+          "source_field": "location",
+          "observed_value": "New York, NY, USA",
+          "baseline_value": "San Francisco, CA, USA"
+        }
+      }
+    ],
+    "customer_context": [],
+    "ring_score": null,
+    "network_findings": null,
+    "fused_reasoning": "ISOLATED-SIGNAL DISCOUNT APPLIED: Detected geographic deviation to New York, but Customer-History shows zero credential churn, historical travel notification (TCK-8813), and biometric authentication on known device (DEV-KNOWN-7712). Isolated pattern anomaly without corroboration is discounted to prevent false-positive alert fatigue.",
+    "evidence_trail": [
+      {
+        "claim": "Geographic location New York, NY differs from home location",
+        "source_agent": "transaction_pattern",
+        "source_field": "location",
+        "weight": "medium"
+      },
+      {
+        "claim": "Biometric authentication on verified primary device DEV-KNOWN-7712 with zero credential churn",
+        "source_agent": "customer_history",
+        "source_field": "Customer_History.device_id",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Mark False Positive",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98215\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"geography\",\n      \"severity\": 45,\n      \"explanation\": \"Transaction location New York, NY deviates from San Francisco home location.\",\n      \"evidence\": {\n        \"source_field\": \"location\",\n        \"observed_value\": \"New York, NY, USA\",\n        \"baseline_value\": \"San Francisco, CA, USA\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 45\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-20811\",\n  \"findings\": [],\n  \"overall_context_risk\": 15\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98215\",\n  \"confidence_score\": 38,\n  \"verdict\": \"Likely Legitimate\",\n  \"fused_reasoning\": \"ISOLATED-SIGNAL DISCOUNT APPLIED: Detected geographic deviation to New York, but Customer-History shows zero credential churn, historical travel notification (TCK-8813), and biometric authentication on known device (DEV-KNOWN-7712). Isolated pattern anomaly without corroboration is discounted to prevent false-positive alert fatigue.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Geographic location New York, NY differs from home location\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"location\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"Biometric authentication on verified primary device DEV-KNOWN-7712 with zero credential churn\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customer_History.device_id\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Mark False Positive\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "closed_by": null,
+    "closed_at": null,
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:41.754632+00:00"
+  },
+  {
+    "report_id": "REP-TX-98217-1788767383",
+    "transaction_id": "TX-98217",
+    "summary": "Copilot assessed TX TX-98217 as 'Needs Review' (Confidence: 68%). Detected 1 pattern anomaly, 1 contextual history signal.",
+    "confidence_score": 68,
     "verdict": "Needs Review",
     "detected_patterns": [
       {
         "anomaly_type": "amount",
-        "severity": 85,
-        "explanation": "Transaction amount far exceeds historical mean",
+        "severity": 75,
+        "explanation": "Amount of $990.00 structured just below the standard $1,000 reporting threshold.",
         "evidence": {
           "source_field": "amount",
-          "observed_value": "480.0",
-          "baseline_value": "102.5"
-        }
-      },
-      {
-        "anomaly_type": "merchant",
-        "severity": 60,
-        "explanation": "Merchant category not seen in recent transactions",
-        "evidence": {
-          "source_field": "merchant_category",
-          "observed_value": "Airlines & Travel",
-          "baseline_value": "Transportation, Retail"
-        }
-      }
-    ],
-    "customer_context": [
-      {
-        "signal_type": "prior_flags",
-        "severity": 40,
-        "explanation": "One historical fraud flag exists with no documented resolution",
-        "evidence": {
-          "source_table": "Customers",
-          "source_record_id": "CUST-20811",
-          "observed_value": "risk_flag_count_lifetime=1"
-        }
-      }
-    ],
-    "fused_reasoning": "The transaction shows a high\u2011severity amount anomaly (85) and a moderate merchant\u2011category deviation (60). A prior fraud flag (40) exists in the customer history, but there is no temporal or contextual corroboration between the pattern and history findings, so confidence is moderated.",
-    "evidence_trail": [
-      {
-        "claim": "Transaction amount far exceeds historical mean",
-        "source_agent": "transaction_pattern",
-        "source_field": "amount",
-        "weight": "high"
-      },
-      {
-        "claim": "Merchant category not seen in recent transactions",
-        "source_agent": "transaction_pattern",
-        "source_field": "merchant_category",
-        "weight": "medium"
-      },
-      {
-        "claim": "One historical fraud flag exists with no documented resolution",
-        "source_agent": "customer_history",
-        "source_field": "risk_flag_count_lifetime",
-        "weight": "low"
-      }
-    ],
-    "recommended_action": "Escalate for Manual Review",
-    "pipeline_status": "Pending Analyst Review",
-    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98215\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 85,\n      \"explanation\": \"Transaction amount far exceeds historical mean\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"480.0\",\n        \"baseline_value\": \"102.5\"\n      }\n    },\n    {\n      \"anomaly_type\": \"merchant\",\n      \"severity\": 60,\n      \"explanation\": \"Merchant category not seen in recent transactions\",\n      \"evidence\": {\n        \"source_field\": \"merchant_category\",\n        \"observed_value\": \"Airlines & Travel\",\n        \"baseline_value\": \"Transportation, Retail\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 70\n}",
-    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-20811\",\n  \"findings\": [\n    {\n      \"signal_type\": \"prior_flags\",\n      \"severity\": 40,\n      \"explanation\": \"One historical fraud flag exists with no documented resolution\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-20811\",\n        \"observed_value\": \"risk_flag_count_lifetime=1\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 35\n}",
-    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98215\",\n  \"confidence_score\": 47,\n  \"verdict\": \"Needs Review\",\n  \"fused_reasoning\": \"The transaction shows a high\\u2011severity amount anomaly (85) and a moderate merchant\\u2011category deviation (60). A prior fraud flag (40) exists in the customer history, but there is no temporal or contextual corroboration between the pattern and history findings, so confidence is moderated.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Transaction amount far exceeds historical mean\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Merchant category not seen in recent transactions\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"merchant_category\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"One historical fraud flag exists with no documented resolution\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"risk_flag_count_lifetime\",\n      \"weight\": \"low\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Escalate for Manual Review\"\n}",
-    "analyst_decision": null,
-    "analyst_notes": null,
-    "closed_by": null,
-    "closed_at": null,
-    "created_at": "2026-09-07T05:23:50.489381+00:00"
-  },
-  {
-    "report_id": "REP-TX-98217-1788758652",
-    "transaction_id": "TX-98217",
-    "summary": "Copilot assessed TX TX-98217 as 'Likely Fraud' (Confidence: 80%). Detected 2 pattern anomalies and 1 contextual history signal.",
-    "confidence_score": 80,
-    "verdict": "Likely Fraud",
-    "detected_patterns": [
-      {
-        "anomaly_type": "amount",
-        "severity": 88,
-        "explanation": "Transaction amount far exceeds customer's typical spend",
-        "evidence": {
-          "source_field": "amount",
-          "observed_value": "990.0",
-          "baseline_value": "35.0"
-        }
-      },
-      {
-        "anomaly_type": "merchant",
-        "severity": 72,
-        "explanation": "Merchant category not seen in customer's recent history",
-        "evidence": {
-          "source_field": "merchant_category",
-          "observed_value": "Money Transfer",
-          "baseline_value": "Pharmacy"
+          "observed_value": "$990.00",
+          "baseline_value": "Reporting Threshold: $1,000.00"
         }
       }
     ],
     "customer_context": [
       {
         "signal_type": "account_maturity",
-        "severity": 70,
-        "explanation": "Account opened 36 days ago and transaction amount $990 exceeds typical monthly spend of $850.",
+        "severity": 60,
+        "explanation": "Account opened less than 45 days ago transacting near threshold limit.",
         "evidence": {
           "source_table": "Customers",
           "source_record_id": "CUST-40115",
-          "observed_value": "account_age_days:36,transaction_amount:990"
+          "observed_value": "Open Date: 2026-08-01"
         }
       }
     ],
-    "fused_reasoning": "The high\u2011severity amount anomaly (severity\u202f88) is corroborated by the customer\u2011history signal that the account is newly opened and the $990 spend exceeds the typical monthly limit (severity\u202f70), creating a strong fraud signature. The merchant\u2011category anomaly (severity\u202f72) lacks corroboration, so its impact is reduced.",
+    "ring_score": null,
+    "network_findings": null,
+    "fused_reasoning": "Moderate risk detected: Amount structuring just below regulatory $1,000 threshold on a relatively new account (<45 days). While no device churn exists, rapid remittance transfer warrants manual compliance review.",
     "evidence_trail": [
       {
-        "claim": "Transaction amount far exceeds typical spend",
+        "claim": "Transaction amount of $990.00 indicates potential structuring",
         "source_agent": "transaction_pattern",
         "source_field": "amount",
         "weight": "high"
       },
       {
-        "claim": "Merchant category not seen in recent history",
-        "source_agent": "transaction_pattern",
-        "source_field": "merchant_category",
+        "claim": "Account opened recently (2026-08-01) with limited established baseline",
+        "source_agent": "customer_history",
+        "source_field": "Customers.account_open_date",
         "weight": "medium"
+      }
+    ],
+    "recommended_action": "Escalate for Manual Review",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98217\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 75,\n      \"explanation\": \"Amount of $990.00 structured just below the standard $1,000 reporting threshold.\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"$990.00\",\n        \"baseline_value\": \"Reporting Threshold: $1,000.00\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 70\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-40115\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 60,\n      \"explanation\": \"Account opened less than 45 days ago transacting near threshold limit.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-40115\",\n        \"observed_value\": \"Open Date: 2026-08-01\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 55\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98217\",\n  \"confidence_score\": 68,\n  \"verdict\": \"Needs Review\",\n  \"fused_reasoning\": \"Moderate risk detected: Amount structuring just below regulatory $1,000 threshold on a relatively new account (<45 days). While no device churn exists, rapid remittance transfer warrants manual compliance review.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Transaction amount of $990.00 indicates potential structuring\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Account opened recently (2026-08-01) with limited established baseline\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customers.account_open_date\",\n      \"weight\": \"medium\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Escalate for Manual Review\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "closed_by": null,
+    "closed_at": null,
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:43.367429+00:00"
+  },
+  {
+    "report_id": "REP-TX-70001-1788767384",
+    "transaction_id": "TX-70001",
+    "summary": "Copilot assessed TX TX-70001 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
+    "confidence_score": 92,
+    "verdict": "Likely Fraud",
+    "detected_patterns": [
+      {
+        "anomaly_type": "velocity",
+        "severity": 85,
+        "explanation": "Rapid high-value wire transfer of $4,800.00 routed through escrow counterparty.",
+        "evidence": {
+          "source_field": "amount / counterparty",
+          "observed_value": "$4,800.00",
+          "baseline_value": "Historical wire velocity: 0"
+        }
+      }
+    ],
+    "customer_context": [
+      {
+        "signal_type": "account_maturity",
+        "severity": 80,
+        "explanation": "Account opened less than 30 days ago initiating large escrow transfer.",
+        "evidence": {
+          "source_table": "Customers",
+          "source_record_id": "CUST-70112",
+          "observed_value": "Account Opened < 30 days"
+        }
+      }
+    ],
+    "ring_score": 90,
+    "network_findings": {
+      "cluster_id": "CLUSTER-4987D1F8",
+      "target_transaction_id": "TX-70001",
+      "target_customer_id": "CUST-70112",
+      "ring_score": 90,
+      "is_suspicious_ring": true,
+      "signals_triggered": [
+        "shared_device",
+        "shared_ip",
+        "transfer_chain",
+        "fan_in_out",
+        "account_age_cluster"
+      ],
+      "findings": [
+        {
+          "signal_type": "shared_device",
+          "severity": 100,
+          "explanation": "Hardware fingerprint overlap: 1 device(s) (DEV-RING-4417) shared across 4 distinct customer profiles.",
+          "entities": [
+            "DEV-RING-4417"
+          ],
+          "evidence": {
+            "shared_devices": {
+              "DEV-RING-4417": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 4
+          }
+        },
+        {
+          "signal_type": "shared_ip",
+          "severity": 50,
+          "explanation": "Network gateway overlap: 2 IP address(es) (45.132.192.7, 103.21.244.18) shared across 2 customer accounts.",
+          "entities": [
+            "45.132.192.7",
+            "103.21.244.18"
+          ],
+          "evidence": {
+            "shared_ips": {
+              "45.132.192.7": [
+                "CUST-70113",
+                "CUST-70112"
+              ],
+              "103.21.244.18": [
+                "CUST-70114",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 2
+          }
+        },
+        {
+          "signal_type": "transfer_chain",
+          "severity": 90,
+          "explanation": "Rapid layering chain: 4 successive hops across accounts ($4,800.00 -> $4,550.00 -> $4,300.00 -> $4,100.00) within rapid turnaround.",
+          "entities": [
+            "TX-70001",
+            "TX-70002",
+            "TX-70003",
+            "TX-70004"
+          ],
+          "evidence": {
+            "hop_count": 4,
+            "transactions": [
+              "TX-70001",
+              "TX-70002",
+              "TX-70003",
+              "TX-70004"
+            ],
+            "amounts": [
+              4800.0,
+              4550.0,
+              4300.0,
+              4100.0
+            ]
+          }
+        },
+        {
+          "signal_type": "fan_in_out",
+          "severity": 85,
+          "explanation": "Mule hub concentration: Destination account(s) (ACC-MULE-9011) aggregate payments from 4 distinct source accounts.",
+          "entities": [
+            "ACC-MULE-9011"
+          ],
+          "evidence": {
+            "mule_accounts": {
+              "ACC-MULE-9011": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_degree": 4
+          }
+        },
+        {
+          "signal_type": "account_age_cluster",
+          "severity": 90,
+          "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
+          "entities": [
+            "CUST-70114",
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70115"
+          ],
+          "evidence": {
+            "synchronized_accounts": [
+              "CUST-70114",
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70115"
+            ]
+          }
+        }
+      ],
+      "entities": {
+        "customers": [
+          "CUST-70114",
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70115"
+        ],
+        "devices": [
+          "DEV-RING-4417"
+        ],
+        "ips": [
+          "45.132.192.7",
+          "103.21.244.18"
+        ],
+        "counterparty_accounts": [
+          "ACC-MULE-9011"
+        ]
+      },
+      "graph": {
+        "nodes": [
+          {
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70113",
+            "label": "Rajesh Nair",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "DEV-RING-4417",
+            "label": "DEV-RING-4417",
+            "type": "device",
+            "isFlagged": true
+          },
+          {
+            "id": "45.132.192.7",
+            "label": "45.132.192.7",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "103.21.244.18",
+            "label": "103.21.244.18",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "ACC-MULE-9011",
+            "label": "ACC-MULE-9011",
+            "type": "account",
+            "isFlagged": true
+          }
+        ],
+        "edges": [
+          {
+            "source": "CUST-70114",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          }
+        ]
+      },
+      "summary": "Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster."
+    },
+    "fused_reasoning": "CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.",
+    "evidence_trail": [
+      {
+        "claim": "Rapid high-value wire transfer through coordinated escrow routing",
+        "source_agent": "transaction_pattern",
+        "source_field": "amount / counterparty",
+        "weight": "high"
       },
       {
-        "claim": "Account opened 36 days ago and transaction amount $990 exceeds typical monthly spend",
+        "claim": "Synchronized newly opened account participating in layering cluster",
         "source_agent": "customer_history",
-        "source_field": "account_maturity",
+        "source_field": "Customers.account_open_date",
+        "weight": "high"
+      },
+      {
+        "claim": "Syndicate Network Ring Detected: Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster.",
+        "source_agent": "system_guardrail",
+        "source_field": "network_graph",
         "weight": "high"
       }
     ],
     "recommended_action": "Approve as Fraud",
     "pipeline_status": "Pending Analyst Review",
-    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-98217\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"amount\",\n      \"severity\": 88,\n      \"explanation\": \"Transaction amount far exceeds customer's typical spend\",\n      \"evidence\": {\n        \"source_field\": \"amount\",\n        \"observed_value\": \"990.0\",\n        \"baseline_value\": \"35.0\"\n      }\n    },\n    {\n      \"anomaly_type\": \"merchant\",\n      \"severity\": 72,\n      \"explanation\": \"Merchant category not seen in customer's recent history\",\n      \"evidence\": {\n        \"source_field\": \"merchant_category\",\n        \"observed_value\": \"Money Transfer\",\n        \"baseline_value\": \"Pharmacy\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 80\n}",
-    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-40115\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 70,\n      \"explanation\": \"Account opened 36 days ago and transaction amount $990 exceeds typical monthly spend of $850.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-40115\",\n        \"observed_value\": \"account_age_days:36,transaction_amount:990\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 70\n}",
-    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-98217\",\n  \"confidence_score\": 80,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"The high\\u2011severity amount anomaly (severity\\u202f88) is corroborated by the customer\\u2011history signal that the account is newly opened and the $990 spend exceeds the typical monthly limit (severity\\u202f70), creating a strong fraud signature. The merchant\\u2011category anomaly (severity\\u202f72) lacks corroboration, so its impact is reduced.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Transaction amount far exceeds typical spend\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Merchant category not seen in recent history\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"merchant_category\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"claim\": \"Account opened 36 days ago and transaction amount $990 exceeds typical monthly spend\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"account_maturity\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-70001\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"velocity\",\n      \"severity\": 85,\n      \"explanation\": \"Rapid high-value wire transfer of $4,800.00 routed through escrow counterparty.\",\n      \"evidence\": {\n        \"source_field\": \"amount / counterparty\",\n        \"observed_value\": \"$4,800.00\",\n        \"baseline_value\": \"Historical wire velocity: 0\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 85\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-70112\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 80,\n      \"explanation\": \"Account opened less than 30 days ago initiating large escrow transfer.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-70112\",\n        \"observed_value\": \"Account Opened < 30 days\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 80\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-70001\",\n  \"confidence_score\": 92,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Rapid high-value wire transfer through coordinated escrow routing\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount / counterparty\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Synchronized newly opened account participating in layering cluster\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customers.account_open_date\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
     "analyst_decision": null,
     "analyst_notes": null,
     "closed_by": null,
     "closed_at": null,
-    "created_at": "2026-09-07T05:24:12.822990+00:00"
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:44.861565+00:00"
   },
   {
-    "report_id": "REP-TX-ERR-9999-1788758665",
+    "report_id": "REP-TX-70002-1788767386",
+    "transaction_id": "TX-70002",
+    "summary": "Copilot assessed TX TX-70002 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
+    "confidence_score": 92,
+    "verdict": "Likely Fraud",
+    "detected_patterns": [
+      {
+        "anomaly_type": "velocity",
+        "severity": 85,
+        "explanation": "Rapid high-value wire transfer of $4,550.00 routed through escrow counterparty.",
+        "evidence": {
+          "source_field": "amount / counterparty",
+          "observed_value": "$4,550.00",
+          "baseline_value": "Historical wire velocity: 0"
+        }
+      }
+    ],
+    "customer_context": [
+      {
+        "signal_type": "account_maturity",
+        "severity": 80,
+        "explanation": "Account opened less than 30 days ago initiating large escrow transfer.",
+        "evidence": {
+          "source_table": "Customers",
+          "source_record_id": "CUST-70113",
+          "observed_value": "Account Opened < 30 days"
+        }
+      }
+    ],
+    "ring_score": 90,
+    "network_findings": {
+      "cluster_id": "CLUSTER-4987D1F8",
+      "target_transaction_id": "TX-70002",
+      "target_customer_id": "CUST-70113",
+      "ring_score": 90,
+      "is_suspicious_ring": true,
+      "signals_triggered": [
+        "shared_device",
+        "shared_ip",
+        "transfer_chain",
+        "fan_in_out",
+        "account_age_cluster"
+      ],
+      "findings": [
+        {
+          "signal_type": "shared_device",
+          "severity": 100,
+          "explanation": "Hardware fingerprint overlap: 1 device(s) (DEV-RING-4417) shared across 4 distinct customer profiles.",
+          "entities": [
+            "DEV-RING-4417"
+          ],
+          "evidence": {
+            "shared_devices": {
+              "DEV-RING-4417": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 4
+          }
+        },
+        {
+          "signal_type": "shared_ip",
+          "severity": 50,
+          "explanation": "Network gateway overlap: 2 IP address(es) (45.132.192.7, 103.21.244.18) shared across 2 customer accounts.",
+          "entities": [
+            "45.132.192.7",
+            "103.21.244.18"
+          ],
+          "evidence": {
+            "shared_ips": {
+              "45.132.192.7": [
+                "CUST-70113",
+                "CUST-70112"
+              ],
+              "103.21.244.18": [
+                "CUST-70114",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 2
+          }
+        },
+        {
+          "signal_type": "transfer_chain",
+          "severity": 90,
+          "explanation": "Rapid layering chain: 4 successive hops across accounts ($4,800.00 -> $4,550.00 -> $4,300.00 -> $4,100.00) within rapid turnaround.",
+          "entities": [
+            "TX-70001",
+            "TX-70002",
+            "TX-70003",
+            "TX-70004"
+          ],
+          "evidence": {
+            "hop_count": 4,
+            "transactions": [
+              "TX-70001",
+              "TX-70002",
+              "TX-70003",
+              "TX-70004"
+            ],
+            "amounts": [
+              4800.0,
+              4550.0,
+              4300.0,
+              4100.0
+            ]
+          }
+        },
+        {
+          "signal_type": "fan_in_out",
+          "severity": 85,
+          "explanation": "Mule hub concentration: Destination account(s) (ACC-MULE-9011) aggregate payments from 4 distinct source accounts.",
+          "entities": [
+            "ACC-MULE-9011"
+          ],
+          "evidence": {
+            "mule_accounts": {
+              "ACC-MULE-9011": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_degree": 4
+          }
+        },
+        {
+          "signal_type": "account_age_cluster",
+          "severity": 90,
+          "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
+          "entities": [
+            "CUST-70114",
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70115"
+          ],
+          "evidence": {
+            "synchronized_accounts": [
+              "CUST-70114",
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70115"
+            ]
+          }
+        }
+      ],
+      "entities": {
+        "customers": [
+          "CUST-70114",
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70115"
+        ],
+        "devices": [
+          "DEV-RING-4417"
+        ],
+        "ips": [
+          "45.132.192.7",
+          "103.21.244.18"
+        ],
+        "counterparty_accounts": [
+          "ACC-MULE-9011"
+        ]
+      },
+      "graph": {
+        "nodes": [
+          {
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70113",
+            "label": "Rajesh Nair",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "DEV-RING-4417",
+            "label": "DEV-RING-4417",
+            "type": "device",
+            "isFlagged": true
+          },
+          {
+            "id": "45.132.192.7",
+            "label": "45.132.192.7",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "103.21.244.18",
+            "label": "103.21.244.18",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "ACC-MULE-9011",
+            "label": "ACC-MULE-9011",
+            "type": "account",
+            "isFlagged": true
+          }
+        ],
+        "edges": [
+          {
+            "source": "CUST-70114",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          }
+        ]
+      },
+      "summary": "Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster."
+    },
+    "fused_reasoning": "CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.",
+    "evidence_trail": [
+      {
+        "claim": "Rapid high-value wire transfer through coordinated escrow routing",
+        "source_agent": "transaction_pattern",
+        "source_field": "amount / counterparty",
+        "weight": "high"
+      },
+      {
+        "claim": "Synchronized newly opened account participating in layering cluster",
+        "source_agent": "customer_history",
+        "source_field": "Customers.account_open_date",
+        "weight": "high"
+      },
+      {
+        "claim": "Syndicate Network Ring Detected: Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster.",
+        "source_agent": "system_guardrail",
+        "source_field": "network_graph",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Approve as Fraud",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-70002\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"velocity\",\n      \"severity\": 85,\n      \"explanation\": \"Rapid high-value wire transfer of $4,550.00 routed through escrow counterparty.\",\n      \"evidence\": {\n        \"source_field\": \"amount / counterparty\",\n        \"observed_value\": \"$4,550.00\",\n        \"baseline_value\": \"Historical wire velocity: 0\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 85\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-70113\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 80,\n      \"explanation\": \"Account opened less than 30 days ago initiating large escrow transfer.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-70113\",\n        \"observed_value\": \"Account Opened < 30 days\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 80\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-70002\",\n  \"confidence_score\": 92,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Rapid high-value wire transfer through coordinated escrow routing\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount / counterparty\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Synchronized newly opened account participating in layering cluster\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customers.account_open_date\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "closed_by": null,
+    "closed_at": null,
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:46.571197+00:00"
+  },
+  {
+    "report_id": "REP-TX-70003-1788767388",
+    "transaction_id": "TX-70003",
+    "summary": "Copilot assessed TX TX-70003 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
+    "confidence_score": 92,
+    "verdict": "Likely Fraud",
+    "detected_patterns": [
+      {
+        "anomaly_type": "velocity",
+        "severity": 85,
+        "explanation": "Rapid high-value wire transfer of $4,300.00 routed through escrow counterparty.",
+        "evidence": {
+          "source_field": "amount / counterparty",
+          "observed_value": "$4,300.00",
+          "baseline_value": "Historical wire velocity: 0"
+        }
+      }
+    ],
+    "customer_context": [
+      {
+        "signal_type": "account_maturity",
+        "severity": 80,
+        "explanation": "Account opened less than 30 days ago initiating large escrow transfer.",
+        "evidence": {
+          "source_table": "Customers",
+          "source_record_id": "CUST-70114",
+          "observed_value": "Account Opened < 30 days"
+        }
+      }
+    ],
+    "ring_score": 90,
+    "network_findings": {
+      "cluster_id": "CLUSTER-4987D1F8",
+      "target_transaction_id": "TX-70003",
+      "target_customer_id": "CUST-70114",
+      "ring_score": 90,
+      "is_suspicious_ring": true,
+      "signals_triggered": [
+        "shared_device",
+        "shared_ip",
+        "transfer_chain",
+        "fan_in_out",
+        "account_age_cluster"
+      ],
+      "findings": [
+        {
+          "signal_type": "shared_device",
+          "severity": 100,
+          "explanation": "Hardware fingerprint overlap: 1 device(s) (DEV-RING-4417) shared across 4 distinct customer profiles.",
+          "entities": [
+            "DEV-RING-4417"
+          ],
+          "evidence": {
+            "shared_devices": {
+              "DEV-RING-4417": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 4
+          }
+        },
+        {
+          "signal_type": "shared_ip",
+          "severity": 50,
+          "explanation": "Network gateway overlap: 2 IP address(es) (45.132.192.7, 103.21.244.18) shared across 2 customer accounts.",
+          "entities": [
+            "45.132.192.7",
+            "103.21.244.18"
+          ],
+          "evidence": {
+            "shared_ips": {
+              "45.132.192.7": [
+                "CUST-70113",
+                "CUST-70112"
+              ],
+              "103.21.244.18": [
+                "CUST-70114",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 2
+          }
+        },
+        {
+          "signal_type": "transfer_chain",
+          "severity": 90,
+          "explanation": "Rapid layering chain: 4 successive hops across accounts ($4,800.00 -> $4,550.00 -> $4,300.00 -> $4,100.00) within rapid turnaround.",
+          "entities": [
+            "TX-70001",
+            "TX-70002",
+            "TX-70003",
+            "TX-70004"
+          ],
+          "evidence": {
+            "hop_count": 4,
+            "transactions": [
+              "TX-70001",
+              "TX-70002",
+              "TX-70003",
+              "TX-70004"
+            ],
+            "amounts": [
+              4800.0,
+              4550.0,
+              4300.0,
+              4100.0
+            ]
+          }
+        },
+        {
+          "signal_type": "fan_in_out",
+          "severity": 85,
+          "explanation": "Mule hub concentration: Destination account(s) (ACC-MULE-9011) aggregate payments from 4 distinct source accounts.",
+          "entities": [
+            "ACC-MULE-9011"
+          ],
+          "evidence": {
+            "mule_accounts": {
+              "ACC-MULE-9011": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_degree": 4
+          }
+        },
+        {
+          "signal_type": "account_age_cluster",
+          "severity": 90,
+          "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
+          "entities": [
+            "CUST-70114",
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70115"
+          ],
+          "evidence": {
+            "synchronized_accounts": [
+              "CUST-70114",
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70115"
+            ]
+          }
+        }
+      ],
+      "entities": {
+        "customers": [
+          "CUST-70114",
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70115"
+        ],
+        "devices": [
+          "DEV-RING-4417"
+        ],
+        "ips": [
+          "45.132.192.7",
+          "103.21.244.18"
+        ],
+        "counterparty_accounts": [
+          "ACC-MULE-9011"
+        ]
+      },
+      "graph": {
+        "nodes": [
+          {
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70113",
+            "label": "Rajesh Nair",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "DEV-RING-4417",
+            "label": "DEV-RING-4417",
+            "type": "device",
+            "isFlagged": true
+          },
+          {
+            "id": "45.132.192.7",
+            "label": "45.132.192.7",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "103.21.244.18",
+            "label": "103.21.244.18",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "ACC-MULE-9011",
+            "label": "ACC-MULE-9011",
+            "type": "account",
+            "isFlagged": true
+          }
+        ],
+        "edges": [
+          {
+            "source": "CUST-70114",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          }
+        ]
+      },
+      "summary": "Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster."
+    },
+    "fused_reasoning": "CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.",
+    "evidence_trail": [
+      {
+        "claim": "Rapid high-value wire transfer through coordinated escrow routing",
+        "source_agent": "transaction_pattern",
+        "source_field": "amount / counterparty",
+        "weight": "high"
+      },
+      {
+        "claim": "Synchronized newly opened account participating in layering cluster",
+        "source_agent": "customer_history",
+        "source_field": "Customers.account_open_date",
+        "weight": "high"
+      },
+      {
+        "claim": "Syndicate Network Ring Detected: Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster.",
+        "source_agent": "system_guardrail",
+        "source_field": "network_graph",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Approve as Fraud",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-70003\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"velocity\",\n      \"severity\": 85,\n      \"explanation\": \"Rapid high-value wire transfer of $4,300.00 routed through escrow counterparty.\",\n      \"evidence\": {\n        \"source_field\": \"amount / counterparty\",\n        \"observed_value\": \"$4,300.00\",\n        \"baseline_value\": \"Historical wire velocity: 0\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 85\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-70114\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 80,\n      \"explanation\": \"Account opened less than 30 days ago initiating large escrow transfer.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-70114\",\n        \"observed_value\": \"Account Opened < 30 days\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 80\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-70003\",\n  \"confidence_score\": 92,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Rapid high-value wire transfer through coordinated escrow routing\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount / counterparty\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Synchronized newly opened account participating in layering cluster\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customers.account_open_date\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "closed_by": null,
+    "closed_at": null,
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:48.229084+00:00"
+  },
+  {
+    "report_id": "REP-TX-70004-1788767389",
+    "transaction_id": "TX-70004",
+    "summary": "Copilot assessed TX TX-70004 as 'Likely Fraud' (Confidence: 92%). Detected 1 pattern anomaly, 1 contextual history signal, and network ring score 90%.",
+    "confidence_score": 92,
+    "verdict": "Likely Fraud",
+    "detected_patterns": [
+      {
+        "anomaly_type": "velocity",
+        "severity": 85,
+        "explanation": "Rapid high-value wire transfer of $4,100.00 routed through escrow counterparty.",
+        "evidence": {
+          "source_field": "amount / counterparty",
+          "observed_value": "$4,100.00",
+          "baseline_value": "Historical wire velocity: 0"
+        }
+      }
+    ],
+    "customer_context": [
+      {
+        "signal_type": "account_maturity",
+        "severity": 80,
+        "explanation": "Account opened less than 30 days ago initiating large escrow transfer.",
+        "evidence": {
+          "source_table": "Customers",
+          "source_record_id": "CUST-70115",
+          "observed_value": "Account Opened < 30 days"
+        }
+      }
+    ],
+    "ring_score": 90,
+    "network_findings": {
+      "cluster_id": "CLUSTER-4987D1F8",
+      "target_transaction_id": "TX-70004",
+      "target_customer_id": "CUST-70115",
+      "ring_score": 90,
+      "is_suspicious_ring": true,
+      "signals_triggered": [
+        "shared_device",
+        "shared_ip",
+        "transfer_chain",
+        "fan_in_out",
+        "account_age_cluster"
+      ],
+      "findings": [
+        {
+          "signal_type": "shared_device",
+          "severity": 100,
+          "explanation": "Hardware fingerprint overlap: 1 device(s) (DEV-RING-4417) shared across 4 distinct customer profiles.",
+          "entities": [
+            "DEV-RING-4417"
+          ],
+          "evidence": {
+            "shared_devices": {
+              "DEV-RING-4417": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 4
+          }
+        },
+        {
+          "signal_type": "shared_ip",
+          "severity": 50,
+          "explanation": "Network gateway overlap: 2 IP address(es) (45.132.192.7, 103.21.244.18) shared across 2 customer accounts.",
+          "entities": [
+            "45.132.192.7",
+            "103.21.244.18"
+          ],
+          "evidence": {
+            "shared_ips": {
+              "45.132.192.7": [
+                "CUST-70113",
+                "CUST-70112"
+              ],
+              "103.21.244.18": [
+                "CUST-70114",
+                "CUST-70115"
+              ]
+            },
+            "max_overlap_count": 2
+          }
+        },
+        {
+          "signal_type": "transfer_chain",
+          "severity": 90,
+          "explanation": "Rapid layering chain: 4 successive hops across accounts ($4,800.00 -> $4,550.00 -> $4,300.00 -> $4,100.00) within rapid turnaround.",
+          "entities": [
+            "TX-70001",
+            "TX-70002",
+            "TX-70003",
+            "TX-70004"
+          ],
+          "evidence": {
+            "hop_count": 4,
+            "transactions": [
+              "TX-70001",
+              "TX-70002",
+              "TX-70003",
+              "TX-70004"
+            ],
+            "amounts": [
+              4800.0,
+              4550.0,
+              4300.0,
+              4100.0
+            ]
+          }
+        },
+        {
+          "signal_type": "fan_in_out",
+          "severity": 85,
+          "explanation": "Mule hub concentration: Destination account(s) (ACC-MULE-9011) aggregate payments from 4 distinct source accounts.",
+          "entities": [
+            "ACC-MULE-9011"
+          ],
+          "evidence": {
+            "mule_accounts": {
+              "ACC-MULE-9011": [
+                "CUST-70114",
+                "CUST-70113",
+                "CUST-70112",
+                "CUST-70115"
+              ]
+            },
+            "max_degree": 4
+          }
+        },
+        {
+          "signal_type": "account_age_cluster",
+          "severity": 90,
+          "explanation": "Synthetic account creation burst: 4 accounts in this cluster were onboarded within 30 days of each other.",
+          "entities": [
+            "CUST-70114",
+            "CUST-70113",
+            "CUST-70112",
+            "CUST-70115"
+          ],
+          "evidence": {
+            "synchronized_accounts": [
+              "CUST-70114",
+              "CUST-70113",
+              "CUST-70112",
+              "CUST-70115"
+            ]
+          }
+        }
+      ],
+      "entities": {
+        "customers": [
+          "CUST-70114",
+          "CUST-70113",
+          "CUST-70112",
+          "CUST-70115"
+        ],
+        "devices": [
+          "DEV-RING-4417"
+        ],
+        "ips": [
+          "45.132.192.7",
+          "103.21.244.18"
+        ],
+        "counterparty_accounts": [
+          "ACC-MULE-9011"
+        ]
+      },
+      "graph": {
+        "nodes": [
+          {
+            "id": "CUST-70114",
+            "label": "Ananya Roy",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70113",
+            "label": "Rajesh Nair",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70112",
+            "label": "Vikram Sethi",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "CUST-70115",
+            "label": "Karan Malhotra",
+            "type": "customer",
+            "isFlagged": true
+          },
+          {
+            "id": "DEV-RING-4417",
+            "label": "DEV-RING-4417",
+            "type": "device",
+            "isFlagged": true
+          },
+          {
+            "id": "45.132.192.7",
+            "label": "45.132.192.7",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "103.21.244.18",
+            "label": "103.21.244.18",
+            "type": "ip",
+            "isFlagged": true
+          },
+          {
+            "id": "ACC-MULE-9011",
+            "label": "ACC-MULE-9011",
+            "type": "account",
+            "isFlagged": true
+          }
+        ],
+        "edges": [
+          {
+            "source": "CUST-70114",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "DEV-RING-4417",
+            "relationship": "USED_DEVICE"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "45.132.192.7",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "103.21.244.18",
+            "relationship": "ROUTED_THROUGH_IP"
+          },
+          {
+            "source": "CUST-70114",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70113",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70112",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          },
+          {
+            "source": "CUST-70115",
+            "target": "ACC-MULE-9011",
+            "relationship": "TRANSFERRED_TO"
+          }
+        ]
+      },
+      "summary": "Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster."
+    },
+    "fused_reasoning": "CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.",
+    "evidence_trail": [
+      {
+        "claim": "Rapid high-value wire transfer through coordinated escrow routing",
+        "source_agent": "transaction_pattern",
+        "source_field": "amount / counterparty",
+        "weight": "high"
+      },
+      {
+        "claim": "Synchronized newly opened account participating in layering cluster",
+        "source_agent": "customer_history",
+        "source_field": "Customers.account_open_date",
+        "weight": "high"
+      },
+      {
+        "claim": "Syndicate Network Ring Detected: Fraud Ring Detector computed Network Risk Score 90% across 4 connected customer account(s). Triggered 5 network indicators: shared_device, shared_ip, transfer_chain, fan_in_out, account_age_cluster.",
+        "source_agent": "system_guardrail",
+        "source_field": "network_graph",
+        "weight": "high"
+      }
+    ],
+    "recommended_action": "Approve as Fraud",
+    "pipeline_status": "Pending Analyst Review",
+    "agent1_output_json": "{\n  \"agent\": \"transaction_pattern\",\n  \"transaction_id\": \"TX-70004\",\n  \"findings\": [\n    {\n      \"anomaly_type\": \"velocity\",\n      \"severity\": 85,\n      \"explanation\": \"Rapid high-value wire transfer of $4,100.00 routed through escrow counterparty.\",\n      \"evidence\": {\n        \"source_field\": \"amount / counterparty\",\n        \"observed_value\": \"$4,100.00\",\n        \"baseline_value\": \"Historical wire velocity: 0\"\n      }\n    }\n  ],\n  \"overall_pattern_risk\": 85\n}",
+    "agent2_output_json": "{\n  \"agent\": \"customer_history\",\n  \"customer_id\": \"CUST-70115\",\n  \"findings\": [\n    {\n      \"signal_type\": \"account_maturity\",\n      \"severity\": 80,\n      \"explanation\": \"Account opened less than 30 days ago initiating large escrow transfer.\",\n      \"evidence\": {\n        \"source_table\": \"Customers\",\n        \"source_record_id\": \"CUST-70115\",\n        \"observed_value\": \"Account Opened < 30 days\"\n      }\n    }\n  ],\n  \"overall_context_risk\": 80\n}",
+    "agent3_output_json": "{\n  \"agent\": \"risk_scoring\",\n  \"transaction_id\": \"TX-70004\",\n  \"confidence_score\": 92,\n  \"verdict\": \"Likely Fraud\",\n  \"fused_reasoning\": \"CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected.\",\n  \"evidence_trail\": [\n    {\n      \"claim\": \"Rapid high-value wire transfer through coordinated escrow routing\",\n      \"source_agent\": \"transaction_pattern\",\n      \"source_field\": \"amount / counterparty\",\n      \"weight\": \"high\"\n    },\n    {\n      \"claim\": \"Synchronized newly opened account participating in layering cluster\",\n      \"source_agent\": \"customer_history\",\n      \"source_field\": \"Customers.account_open_date\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"recommended_analyst_action\": \"Approve as Fraud\"\n}",
+    "analyst_decision": null,
+    "analyst_notes": null,
+    "closed_by": null,
+    "closed_at": null,
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:49.803128+00:00"
+  },
+  {
+    "report_id": "REP-TX-ERR-9999-1788767391",
     "transaction_id": "TX-ERR-9999",
     "summary": "SYSTEM ERROR: Investigation pipeline failed schema validation. Escalated to manual review.",
     "confidence_score": 0,
     "verdict": "Needs Review",
     "detected_patterns": [],
-    "customer_context": [
-      {
-        "signal_type": "credential_churn",
-        "severity": 80,
-        "explanation": "Password reset and new device registration occurred within 24-72h before the high-value transaction.",
-        "evidence": {
-          "source_table": "Customer_History",
-          "source_record_id": "EVT-5011",
-          "observed_value": "Password_Reset on 2026-09-04T18:22:10Z"
-        }
-      },
-      {
-        "signal_type": "complaint_signal",
-        "severity": 70,
-        "explanation": "Customer filed an unauthorized-access support ticket shortly before the transaction.",
-        "evidence": {
-          "source_table": "Support_Tickets",
-          "source_record_id": "TCK-8812",
-          "observed_value": "Unauthorized Access ticket reported on 2026-09-07"
-        }
-      }
-    ],
+    "customer_context": [],
+    "ring_score": null,
+    "network_findings": null,
     "fused_reasoning": "Audit Pipeline Error: Pipeline error: Simulation: Agent 1 failed to emit valid JSON; Agent 1 (Transaction-Pattern) malformed or missing output.; Agent 3 (Risk-Scoring Fusion) malformed or missing output.. Per Handbook Ch.8.1, this non-retryable error requires manual analyst inspection.",
     "evidence_trail": [
       {
@@ -288,12 +1516,16 @@
     "recommended_action": "Escalate for Manual Review",
     "pipeline_status": "Agent Error - Manual Review Required",
     "agent1_output_json": "{}",
-    "agent2_output_json": "{\"agent\": \"customer_history\", \"customer_id\": \"CUST-10492\", \"findings\": [{\"signal_type\": \"credential_churn\", \"severity\": 80, \"explanation\": \"Password reset and new device registration occurred within 24-72h before the high-value transaction.\", \"evidence\": {\"source_table\": \"Customer_History\", \"source_record_id\": \"EVT-5011\", \"observed_value\": \"Password_Reset on 2026-09-04T18:22:10Z\"}}, {\"signal_type\": \"complaint_signal\", \"severity\": 70, \"explanation\": \"Customer filed an unauthorized-access support ticket shortly before the transaction.\", \"evidence\": {\"source_table\": \"Support_Tickets\", \"source_record_id\": \"TCK-8812\", \"observed_value\": \"Unauthorized Access ticket reported on 2026-09-07\"}}], \"overall_context_risk\": 75}",
+    "agent2_output_json": "{\"agent\": \"customer_history\", \"customer_id\": \"CUST-10492\", \"findings\": [], \"overall_context_risk\": 10}",
     "agent3_output_json": "{}",
     "analyst_decision": null,
     "analyst_notes": null,
     "closed_by": null,
     "closed_at": null,
-    "created_at": "2026-09-07T05:24:25.674722+00:00"
+    "model_provider": "offline",
+    "model_id": "deterministic-fixture-v1",
+    "pipeline_version": "1.2.0",
+    "prompt_version": "1.0.0",
+    "created_at": "2026-09-07T07:49:51.451178+00:00"
   }
 ]

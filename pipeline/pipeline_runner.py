@@ -25,12 +25,14 @@ from pipeline.deterministic_report_generator import (
     validate_agent1_schema,
     validate_agent2_schema,
 )
+from pipeline.ring_detector import RingDetector
+from pipeline.investigation_state import InvestigationState
 
 # Bump by hand whenever pipeline_runner.py's orchestration logic changes
 # (routing, stopping conditions, guardrail wiring). Stamped on every report
 # alongside PROMPT_VERSION so a verdict is reproducible against the exact
 # code + prompts that produced it.
-PIPELINE_VERSION = "1.1.0"
+PIPELINE_VERSION = "1.2.0"
 
 
 class FraudCopilotPipeline:
@@ -51,12 +53,21 @@ class FraudCopilotPipeline:
         # Additional places a finished report is delivered, beyond the local
         # JSON file this class always writes in run_all_cases().
         self.report_sinks = get_report_sinks()
+        self._ring_detector = None
 
         if self.live:
             provider, model = llm.current_model_label()
             self.model_provider, self.model_id = provider, model
         else:
             self.model_provider, self.model_id = "offline", "deterministic-fixture-v1"
+
+    def get_ring_detector(self) -> RingDetector:
+        if self._ring_detector is None:
+            all_txs = self.datasource.get_all_transactions()
+            all_custs = self.datasource.get_all_customers()
+            all_hist = self.datasource.get_all_customer_history()
+            self._ring_detector = RingDetector(all_txs, all_custs, all_hist)
+        return self._ring_detector
 
     def _call_or_escalate(self, system_prompt: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Run one live agent turn.
@@ -159,6 +170,20 @@ class FraudCopilotPipeline:
             })
             overall_risk = 70
 
+        # Scenario 5: Syndicate Layering Chain
+        elif tx_id.startswith("TX-7000"):
+            findings.append({
+                "anomaly_type": "velocity",
+                "severity": 85,
+                "explanation": f"Rapid high-value wire transfer of ${amount:,.2f} routed through escrow counterparty.",
+                "evidence": {
+                    "source_field": "amount / counterparty",
+                    "observed_value": f"${amount:,.2f}",
+                    "baseline_value": "Historical wire velocity: 0"
+                }
+            })
+            overall_risk = 85
+
         return {
             "agent": "transaction_pattern",
             "transaction_id": tx_id,
@@ -228,6 +253,19 @@ class FraudCopilotPipeline:
                 }
             })
             overall_risk = 55
+
+        elif tx_id.startswith("TX-7000"):
+            findings.append({
+                "signal_type": "account_maturity",
+                "severity": 80,
+                "explanation": "Account opened less than 30 days ago initiating large escrow transfer.",
+                "evidence": {
+                    "source_table": "Customers",
+                    "source_record_id": cust_id,
+                    "observed_value": "Account Opened < 30 days"
+                }
+            })
+            overall_risk = 80
 
         return {
             "agent": "customer_history",
@@ -333,6 +371,28 @@ class FraudCopilotPipeline:
                 "weight": "medium"
             })
 
+        # Case 4: Syndicate Fraud Ring Layering Chain
+        elif transaction_id.startswith("TX-7000"):
+            confidence = 92
+            verdict = "Likely Fraud"
+            action = "Approve as Fraud"
+            fused_reasoning = (
+                "CORROBORATED FRAUD RING SYNDICATE: High-velocity wire transfer aligns with rapid account creation "
+                "and coordinated hardware/IP sharing across syndicate nodes. Multi-hop layering chain detected."
+            )
+            evidence_trail.append({
+                "claim": "Rapid high-value wire transfer through coordinated escrow routing",
+                "source_agent": "transaction_pattern",
+                "source_field": "amount / counterparty",
+                "weight": "high"
+            })
+            evidence_trail.append({
+                "claim": "Synchronized newly opened account participating in layering cluster",
+                "source_agent": "customer_history",
+                "source_field": "Customers.account_open_date",
+                "weight": "high"
+            })
+
         else:
             confidence = 15
             verdict = "Likely Legitimate"
@@ -357,7 +417,11 @@ class FraudCopilotPipeline:
 
     def process_transaction(self, transaction: Dict[str, Any], force_agent_error: bool = False) -> Dict[str, Any]:
         """
-        Executes the full pipeline for a single transaction.
+        Executes the adaptive investigation loop for a single transaction.
+
+        Uses InvestigationState (spec §3.3) to drive evidence-based agent
+        selection: the next agent is always chosen BECAUSE of what the
+        previous agent discovered.
         """
         tx_id = transaction["transaction_id"]
         customer_id = transaction.get("customer_id")
@@ -366,18 +430,73 @@ class FraudCopilotPipeline:
         history = self.datasource.get_customer_history(customer_id)
         tickets = self.datasource.get_support_tickets(customer_id)
 
-        # Branch A: Agent 1
-        agent1_out = self.run_agent1_transaction_pattern(transaction, recent_txs, force_error=force_agent_error)
-
-        # Branch B: Agent 2
-        agent2_out = self.run_agent2_customer_history(transaction, customer, history, tickets, force_error=False)
-
-        # Fusion: Agent 3 only runs on inputs that passed schema validation, so a
-        # failed specialist can never be fused into a confident-looking verdict.
+        state = InvestigationState(transaction)
+        agent1_out = None
+        agent2_out = None
         agent3_out = None
-        inputs_valid = validate_agent1_schema(agent1_out) and validate_agent2_schema(agent2_out)
-        if not force_agent_error and inputs_valid:
-            agent3_out = self.run_agent3_risk_scoring(tx_id, agent1_out, agent2_out)
+        ring_analysis = None
+
+        # Adaptive Investigation Loop (spec §4.2, §12)
+        while not state.should_stop():
+            trigger = state.get_trigger_reason()
+            next_check = state.choose_next_check()
+            if next_check is None:
+                break
+
+            if next_check == "transaction_history":
+                agent1_out = self.run_agent1_transaction_pattern(
+                    transaction, recent_txs, force_error=force_agent_error
+                )
+                state.record_step("transaction_history", "transaction_pattern", agent1_out, trigger)
+                if not force_agent_error and validate_agent1_schema(agent1_out):
+                    state.update_hypotheses_from_agent1(agent1_out)
+
+            elif next_check == "account_identity":
+                agent2_out = self.run_agent2_customer_history(
+                    transaction, customer, history, tickets, force_error=False
+                )
+                state.record_step("account_identity", "customer_history", agent2_out, trigger)
+                if validate_agent2_schema(agent2_out):
+                    state.update_hypotheses_from_agent2(agent2_out)
+
+            elif next_check == "risk_fusion":
+                inputs_valid = (
+                    agent1_out and validate_agent1_schema(agent1_out)
+                    and agent2_out and validate_agent2_schema(agent2_out)
+                )
+                if not force_agent_error and inputs_valid:
+                    agent3_out = self.run_agent3_risk_scoring(tx_id, agent1_out, agent2_out)
+                    state.record_step("risk_fusion", "risk_scoring", agent3_out, trigger)
+                    state.update_risk_from_agent3(agent3_out)
+                else:
+                    # Schema failure — record as completed so the loop advances
+                    state.record_step("risk_fusion", "risk_scoring", {"findings": []}, "schema_validation_failure")
+
+            elif next_check == "network_analysis":
+                if not force_agent_error and customer_id:
+                    ring_detector = self.get_ring_detector()
+                    if ring_detector.has_network_links(
+                        customer_id=customer_id,
+                        device_id=transaction.get("device_id"),
+                        ip_address=transaction.get("ip_address"),
+                        counterparty=transaction.get("counterparty_account")
+                    ):
+                        ring_analysis = ring_detector.analyze_transaction(transaction)
+                        state.record_step("network_analysis", "ring_detector", ring_analysis, trigger)
+                        state.update_hypotheses_from_ring(ring_analysis)
+                    else:
+                        # Pre-check found no links — skip and record
+                        state.record_step(
+                            "network_analysis", "ring_detector",
+                            {"findings": [], "ring_score": 0, "is_suspicious_ring": False},
+                            "pre-check: no network links found"
+                        )
+                else:
+                    state.record_step(
+                        "network_analysis", "ring_detector",
+                        {"findings": []},
+                        "skipped: force_error or no customer_id"
+                    )
 
         # Deterministic Report Generator (Action-Level Guardrail)
         report = build_deterministic_investigation_report(
@@ -385,6 +504,8 @@ class FraudCopilotPipeline:
             agent1_output=agent1_out if not force_agent_error else None,
             agent2_output=agent2_out,
             agent3_output=agent3_out,
+            ring_analysis=ring_analysis,
+            investigation_state=state.to_dict(),
             error_message="Simulation: Agent 1 failed to emit valid JSON" if force_agent_error else None,
             model_provider=self.model_provider,
             model_id=self.model_id,

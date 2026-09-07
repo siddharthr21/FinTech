@@ -12,8 +12,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pipeline.deterministic_report_generator import build_deterministic_investigation_report
+from pipeline.deterministic_report_generator import (
+    build_deterministic_investigation_report,
+    validate_ring_schema,
+)
 from pipeline.pipeline_runner import FraudCopilotPipeline
+from pipeline.ring_detector import RingDetector
 
 VALID_A1 = {
     "agent": "transaction_pattern",
@@ -93,6 +97,8 @@ def test_benchmark_cases_match_documented_scores():
     )
     expected = {"TX-98214": (94, "Likely Fraud"), "TX-98215": (38, "Likely Legitimate"), "TX-98217": (68, "Needs Review")}
     for tx in pipeline.datasource.get_flagged_transactions():
+        if tx["transaction_id"] not in expected:
+            continue
         rep = pipeline.process_transaction(tx)
         score, verdict = expected[tx["transaction_id"]]
         assert rep["confidence_score"] == score, (tx["transaction_id"], rep["confidence_score"])
@@ -114,6 +120,64 @@ def test_reports_carry_provenance():
     assert rep["model_id"] == "deterministic-fixture-v1"
     assert rep["pipeline_version"]
     assert rep["prompt_version"]
+
+
+def test_ring_detector_discrimination():
+    """Handbook Ch.9.2: Syndicates must trigger critical ring alarms (>=80%), while innocent shared-device pairs remain benign (<35%)."""
+    import json
+    data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    with open(data_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    rd = RingDetector(data["transactions"], data["customers"], data.get("customer_history"))
+
+    tx_syn = next(t for t in data["transactions"] if t["transaction_id"] == "TX-70001")
+    res_syn = rd.analyze_transaction(tx_syn)
+    assert res_syn["ring_score"] >= 80, f"Syndicate score was {res_syn['ring_score']}"
+    assert res_syn["is_suspicious_ring"] is True
+    assert "shared_device" in res_syn["signals_triggered"]
+    assert "transfer_chain" in res_syn["signals_triggered"]
+
+    tx_cpl = next(t for t in data["transactions"] if t["transaction_id"] == "TX-80001")
+    res_cpl = rd.analyze_transaction(tx_cpl)
+    assert res_cpl["ring_score"] < 35, f"Couple score was {res_cpl['ring_score']}"
+    assert res_cpl["is_suspicious_ring"] is False
+
+
+def test_ring_schema_validation():
+    """Ch.9.2 guardrail: validate_ring_schema must reject corrupted network findings."""
+    valid_ring = {
+        "cluster_id": "CLUSTER-1",
+        "ring_score": 90,
+        "is_suspicious_ring": True,
+        "signals_triggered": ["shared_device"],
+        "findings": [
+            {
+                "signal_type": "shared_device",
+                "severity": 85,
+                "explanation": "Hardware overlap",
+                "entities": ["DEV-1"],
+                "evidence": {}
+            }
+        ],
+        "entities": {"customers": ["CUST-1", "CUST-2"], "devices": ["DEV-1"], "ips": [], "counterparty_accounts": []}
+    }
+    assert validate_ring_schema(valid_ring) is True
+    assert validate_ring_schema({}) is False
+    assert validate_ring_schema({**valid_ring, "ring_score": 140}) is False
+    assert validate_ring_schema({**valid_ring, "findings": [{"signal_type": "vibes", "severity": 50}]}) is False
+
+
+def test_report_includes_ring_analysis():
+    """Investigation reports for syndicate transactions must carry validated ring_score and network_findings."""
+    pipeline = FraudCopilotPipeline(
+        data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "seed_data.json")
+    )
+    tx_syn = next(t for t in pipeline.datasource.get_flagged_transactions() if t["transaction_id"] == "TX-70001")
+    rep = pipeline.process_transaction(tx_syn)
+    assert rep["ring_score"] is not None
+    assert rep["ring_score"] >= 80
+    assert rep["network_findings"] is not None
+    assert any("Syndicate Network Ring Detected" in e.get("claim", "") for e in rep["evidence_trail"])
 
 
 if __name__ == "__main__":
