@@ -30,6 +30,7 @@ export default function NetworkRingGraph({
   transactionId = "TX-LIVE",
 }: NetworkRingGraphProps) {
   const [selectedNode, setSelectedNode] = useState<NetworkGraphNode | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"graph" | "table" | "signals">("graph");
 
   let ringAnalysis: RingAnalysisResult | null = null;
@@ -48,6 +49,22 @@ export default function NetworkRingGraph({
   const ringScore = ringAnalysis ? ringAnalysis.ring_score : (propScore ?? 0);
   const isSuspicious = ringAnalysis?.is_suspicious_ring ?? (ringScore >= 50);
 
+  const nodes = ringAnalysis?.graph?.nodes || [];
+  const edges = ringAnalysis?.graph?.edges || [];
+  const findings = ringAnalysis?.findings || [];
+  const entities = ringAnalysis?.entities || { customers: [], devices: [], ips: [], counterparty_accounts: [] };
+
+  // Set of node IDs directly connected to the hovered node
+  const connectedNodeIds = React.useMemo(() => {
+    if (!hoveredNodeId || !ringAnalysis?.graph?.edges) return new Set<string>();
+    const ids = new Set<string>([hoveredNodeId]);
+    ringAnalysis.graph.edges.forEach((e) => {
+      if (e.source === hoveredNodeId) ids.add(e.target);
+      if (e.target === hoveredNodeId) ids.add(e.source);
+    });
+    return ids;
+  }, [hoveredNodeId, ringAnalysis]);
+
   if (!ringAnalysis) {
     return (
       <div className="bg-[#0b101b] border border-[#1b253b] rounded-xl p-8 text-center text-slate-400">
@@ -61,11 +78,6 @@ export default function NetworkRingGraph({
       </div>
     );
   }
-
-  const nodes = ringAnalysis.graph?.nodes || [];
-  const edges = ringAnalysis.graph?.edges || [];
-  const findings = ringAnalysis.findings || [];
-  const entities = ringAnalysis.entities || { customers: [], devices: [], ips: [], counterparty_accounts: [] };
 
   // Calculate coordinates for circular layout in SVG viewBox 600x380
   const centerX = 300;
@@ -185,14 +197,20 @@ export default function NetworkRingGraph({
           <div className="relative w-full xl:w-2/3 bg-[#070a12] border border-[#172033] rounded-xl overflow-hidden flex items-center justify-center p-2">
             <svg viewBox="0 0 600 380" className="w-full h-auto max-h-[380px] select-none">
               <defs>
-                <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(244, 63, 94, 0.6)" />
+                <filter id="glow-red" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(244, 63, 94, 0.7)" />
                 </filter>
-                <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(168, 85, 247, 0.6)" />
+                <filter id="glow-purple" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(168, 85, 247, 0.7)" />
                 </filter>
-                <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(245, 158, 11, 0.6)" />
+                <filter id="glow-amber" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(245, 158, 11, 0.7)" />
+                </filter>
+                <filter id="glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(6, 182, 212, 0.7)" />
+                </filter>
+                <filter id="glow-hover" x="-50%" y="-50%" width="200%" height="200%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="rgba(56, 189, 248, 0.85)" />
                 </filter>
               </defs>
 
@@ -205,6 +223,12 @@ export default function NetworkRingGraph({
                 const p1 = nodePositions[edge.source];
                 const p2 = nodePositions[edge.target];
                 if (!p1 || !p2) return null;
+                const isEdgeConnected = hoveredNodeId
+                  ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
+                  : false;
+                const isDimmed = hoveredNodeId ? !isEdgeConnected : false;
+                const isTransfer = edge.relationship === "TRANSFERRED_TO";
+
                 return (
                   <g key={`edge-${i}`}>
                     <line
@@ -212,10 +236,27 @@ export default function NetworkRingGraph({
                       y1={p1.y}
                       x2={p2.x}
                       y2={p2.y}
-                      stroke={edge.relationship === "TRANSFERRED_TO" ? "#f59e0b" : "#223252"}
-                      strokeWidth={edge.relationship === "TRANSFERRED_TO" ? 2 : 1.2}
-                      strokeDasharray={edge.relationship === "TRANSFERRED_TO" ? "4 2" : undefined}
-                      opacity={0.8}
+                      stroke={
+                        isEdgeConnected
+                          ? isTransfer
+                            ? "#fbbf24"
+                            : "#38bdf8"
+                          : isTransfer
+                          ? "#f59e0b"
+                          : "#223252"
+                      }
+                      strokeWidth={
+                        isEdgeConnected
+                          ? isTransfer
+                            ? 3.5
+                            : 2.8
+                          : isTransfer
+                          ? 2
+                          : 1.2
+                      }
+                      strokeDasharray={isTransfer ? (isEdgeConnected ? "6 3" : "4 2") : undefined}
+                      opacity={isDimmed ? 0.12 : isEdgeConnected ? 1 : 0.8}
+                      style={{ transition: "stroke 180ms ease, stroke-width 180ms ease, opacity 180ms ease" }}
                     />
                   </g>
                 );
@@ -226,31 +267,47 @@ export default function NetworkRingGraph({
                 const pos = nodePositions[node.id];
                 if (!pos) return null;
                 const isSelected = selectedNode?.id === node.id;
+                const isHovered = hoveredNodeId === node.id;
+                const isConnected = hoveredNodeId ? connectedNodeIds.has(node.id) : false;
+                const isDimmed = hoveredNodeId ? !isHovered && !isConnected : false;
                 const color = getNodeColor(node);
+                const baseRadius = node.type === "customer" ? 18 : 14;
+                const currentRadius = isHovered ? baseRadius + 3.5 : isSelected ? baseRadius + 2 : baseRadius;
+
                 return (
                   <g
                     key={node.id}
                     transform={`translate(${pos.x}, ${pos.y})`}
-                    className="cursor-pointer transition-transform duration-150 hover:scale-110"
+                    className="cursor-pointer"
+                    opacity={isDimmed ? 0.25 : 1}
+                    style={{ transition: "opacity 180ms ease" }}
+                    onMouseEnter={() => {
+                      soundManager.playClick();
+                      setHoveredNodeId(node.id);
+                    }}
+                    onMouseLeave={() => setHoveredNodeId(null)}
                     onClick={() => {
                       soundManager.playClick();
                       setSelectedNode(node);
                     }}
                   >
+                    <title>{`${node.label} (${node.id}) • Type: ${node.type.toUpperCase()}${node.isFlagged ? " • High Risk Overlap" : ""}`}</title>
                     <circle
-                      r={node.type === "customer" ? 18 : 14}
-                      fill="#0b101c"
-                      stroke={color}
-                      strokeWidth={isSelected ? 3 : 2}
-                      filter={node.isFlagged ? "url(#glow-red)" : undefined}
+                      r={currentRadius}
+                      fill={isHovered ? "#131d31" : "#0b101c"}
+                      stroke={isHovered ? "#ffffff" : color}
+                      strokeWidth={isHovered ? 3 : isSelected ? 2.5 : 2}
+                      filter={isHovered ? "url(#glow-hover)" : node.isFlagged ? "url(#glow-red)" : undefined}
+                      style={{ transition: "r 180ms ease, fill 180ms ease, stroke 180ms ease, stroke-width 180ms ease" }}
                     />
                     <text
                       y={4}
                       textAnchor="middle"
-                      fill={color}
+                      fill={isHovered ? "#ffffff" : color}
                       fontSize="9"
                       fontWeight="bold"
                       fontFamily="monospace"
+                      className="select-none pointer-events-none"
                     >
                       {node.type === "customer"
                         ? node.id.replace("CUST-", "")
@@ -263,10 +320,11 @@ export default function NetworkRingGraph({
                     <text
                       y={26}
                       textAnchor="middle"
-                      fill="#94a3b8"
+                      fill={isHovered ? "#ffffff" : isConnected ? "#cbd5e1" : "#94a3b8"}
                       fontSize="8"
+                      fontWeight={isHovered ? "bold" : "normal"}
                       fontFamily="monospace"
-                      className="select-none pointer-events-none"
+                      className="select-none pointer-events-none transition-colors duration-150"
                     >
                       {node.label.length > 12 ? `${node.label.substring(0, 10)}...` : node.label}
                     </text>
